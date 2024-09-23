@@ -5,4 +5,5 @@ export enum Commands {
     ADD_SHIPS = "add_ships",
     ATTACK = "attack",
     RANDOM_ATTACK = "randomAttack",
+    UPDATE_ROOM = "update_room",
 }

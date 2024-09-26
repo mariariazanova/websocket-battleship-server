@@ -1,6 +1,6 @@
 import { Room } from '../interfaces/room';
 // import { generateUuid } from '../utils/generate-uuid';
-import { users } from '../database/users-database';
+import {getCurrentUserName, getUserByName, users} from '../database/users-database';
 // import { generateId } from '../utils/generate-uuid';
 import { rooms } from '../database/rooms-database';
 // import { updateRoomResponse } from './responses';
@@ -8,9 +8,14 @@ import { rooms } from '../database/rooms-database';
 
 export const createRoom = (roomId: number): void => {
     try {
+        const currentUserName = getCurrentUserName();
+        const currentUser = getUserByName(currentUserName);
+        console.log(users, currentUserName);
+
         const room: Room = {
             roomId,
-            roomUsers: [{ name: users[0].name || '', index: users[0].id }],
+            roomUsers: [{ name: currentUserName || '', index: currentUser.index }],
+            // roomUsers: [{ name: users[0].name || '', index: users[0].id }],
         };
 
         rooms.push(room);
@@ -25,16 +30,25 @@ export const createRoom = (roomId: number): void => {
 }
 
 export function addUserToRoom(data: any, userId: number): void {
+    console.log('addUserToRoom', data);
     console.log(data);
     console.log(rooms);
     console.log(users);
     console.log(userId);
     const { indexRoom } = JSON.parse(data);
 
-    const user = users.find(user => user.id === userId);
+    const currentUserName = getCurrentUserName();
+    const currentUser = getUserByName(currentUserName);
+    console.log(currentUserName, currentUser)
+
+    // const user =
+    //     users.find(user => user.index === userId);
+    // const user =
+    //     users.find(user => user.id === userId);
     const roomUser = {
-        name: user.name,
-        index: user.id,
+        name: currentUserName,
+        index: currentUser.index,
+        // index: user.id,
     };
     // if (!user) return [];
     // const roomUser: UserWithIndex = {

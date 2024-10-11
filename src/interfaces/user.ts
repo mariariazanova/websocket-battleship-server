@@ -8,3 +8,9 @@ export interface User {
 export interface UserWithIndex extends Pick<User, 'name'> {
     index: number;
 }
+
+export interface Winner {
+    id: number,
+    name: string,
+    wins: number,
+}

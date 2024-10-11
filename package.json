@@ -13,7 +13,7 @@
     "keywords": [],
     "license": "ISC",
     "dependencies": {
-        "ws": "^8.8.0"
+        "ws": "8.17.1"
     },
     "devDependencies": {
         "@types/node": "^20.4.2",

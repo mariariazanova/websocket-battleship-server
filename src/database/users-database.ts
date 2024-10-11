@@ -1,4 +1,4 @@
-import { User } from '../interfaces/user';
+import {User, Winner} from '../interfaces/user';
 
 // export const users: User[] = [{ name: 'Ann', id: 666, password: '666' }];
 export const users: User[] = [];
@@ -30,3 +30,5 @@ export const setCurrentUserName = (userName: string): void => {
 };
 
 export const getCurrentUser = (): User => getUserByName(getCurrentUserName());
+
+export const winners: Winner[] = [];

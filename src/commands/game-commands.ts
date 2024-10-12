@@ -76,17 +76,53 @@ export const attack = (data: any): void => {
     attackResponse(indexPlayer, x, y);
 };
 
+// export const randomAttack = (data: any): void => {
+//     console.log('randomAttack');
+//     const { gameId, indexPlayer } = JSON.parse(data);
+//     attack(
+//         JSON.stringify({
+//             gameId,
+//             x: Math.floor(Math.random() * 10),
+//             y: Math.floor(Math.random() * 10),
+//             indexPlayer,
+//         })
+//     );
+// }
+
+const attackedCells = new Set<string>();
+
 export const randomAttack = (data: any): void => {
     console.log('randomAttack');
     const { gameId, indexPlayer } = JSON.parse(data);
-    attack(
-        JSON.stringify({
-            gameId,
-            x: Math.floor(Math.random() * 10),
-            y: Math.floor(Math.random() * 10),
-            indexPlayer,
-        })
-    );
+
+    // Generate a random attack position that has not been shot yet
+    let x, y;
+    let attackPositionFound = false;
+    const maxAttempts = 100; // Limit attempts to prevent infinite loops
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        x = Math.floor(Math.random() * 10);
+        y = Math.floor(Math.random() * 10);
+
+        // Check if this cell has already been attacked
+        if (!attackedCells.has(`${x},${y}`)) {
+            attackedCells.add(`${x},${y}`); // Mark this cell as attacked
+            attack(
+                JSON.stringify({
+                    gameId,
+                    x,
+                    y,
+                    indexPlayer,
+                })
+            );
+            attackPositionFound = true;
+            break; // Exit the loop after a successful attack
+        }
+    }
+
+    if (!attackPositionFound) {
+        console.warn(`Unable to find an unshot cell after ${maxAttempts} attempts.`);
+    }
 }
 
 export const singlePlay = (data: any): void => {

@@ -165,7 +165,11 @@ export const turnResponse = (userId?: number): void => {
     if (isSinglePlay() && userId === 111111) {
         console.log('single play');
 
-        randomAttack(JSON.stringify({ gameId: game.gameId, indexPlayer: 111111 }));
+        setTimeout(() => {
+            randomAttack(JSON.stringify({ gameId: game.gameId, indexPlayer: 111111 }));
+        }, 1500);
+
+        // randomAttack(JSON.stringify({ gameId: game.gameId, indexPlayer: 111111 }));
     }
 };
 
@@ -275,56 +279,102 @@ export function initializeShipStates(ships: Ship[]): ShipState[] {
     });
 }
 
-export function getRandomShips(): Ship[] {
-    const ships: Ship[] = [];
-    const occupiedCells = new Set<string>(); // To track the cells occupied by ships
-    const boardSize = 10;
+export function getRandomShips(): ShipState[] {
+    const ships: ShipState[] = [];
+    const shipModels = shipsConfiguration;
 
-    // Helper function to check if a ship can be placed at the given position
-    const canPlaceShip = (x: number, y: number, length: number, direction: boolean): boolean => {
+    // Sort ships by size in descending order
+    shipModels.sort((a, b) => b.length - a.length);
+
+    // Initialize the field
+    const field: boolean[][] = Array.from({ length: 10 }, () => Array(10).fill(false)); // false indicates the cell is unoccupied
+
+    // Function to check if the ship can be placed
+    function canPlaceShip(x: number, y: number, length: number, direction: boolean): boolean {
         for (let i = 0; i < length; i++) {
-            const newX = x + (direction ? 0 : i); // Horizontal if direction is false
-            const newY = y + (direction ? i : 0); // Vertical if direction is true
+            const shipX = x + (direction ? 0 : i);
+            const shipY = y + (direction ? i : 0);
 
-            // Check if the new position is within bounds and not occupied
-            if (newX >= boardSize || newY >= boardSize || occupiedCells.has(`${newX},${newY}`)) {
+            // Check for out-of-bounds and existing ships
+            if (shipX >= 10 || shipY >= 10 || field[shipX][shipY]) {
                 return false;
             }
         }
-        return true;
-    };
 
-    // Helper function to add a ship to the occupied cells set
-    const occupyCells = (x: number, y: number, length: number, direction: boolean) => {
+        // Check for surrounding cells to ensure at least one empty cell between ships
+        const checkOffsets = [-1, 0, 1]; // For surrounding cells
         for (let i = 0; i < length; i++) {
-            const newX = x + (direction ? 0 : i);
-            const newY = y + (direction ? i : 0);
-            occupiedCells.add(`${newX},${newY}`);
-        }
-    };
+            const shipX = x + (direction ? 0 : i);
+            const shipY = y + (direction ? i : 0);
 
-    // Generate ships for each model
-    shipsConfiguration.forEach(({ type, length, count }) => {
-        for (let i = 0; i < count; i++) {
-            let placed = false;
+            for (const offsetX of checkOffsets) {
+                for (const offsetY of checkOffsets) {
+                    const checkX = shipX + offsetX;
+                    const checkY = shipY + offsetY;
 
-            // Keep trying to place the ship until it fits
-            while (!placed) {
-                const direction = Math.random() < 0.5; // Randomly pick direction (horizontal or vertical)
-                const x = Math.floor(Math.random() * boardSize);  // Random x position
-                const y = Math.floor(Math.random() * boardSize);  // Random y position
+                    // Ensure we're not checking the ship's own cells
+                    if (offsetX === 0 && offsetY === 0) continue;
 
-                if (canPlaceShip(x, y, length, direction)) {
-                    ships.push({
-                        type,
-                        length,
-                        position: { x, y },
-                        direction,
-                    });
-                    occupyCells(x, y, length, direction); // Mark the cells as occupied
-                    placed = true;
+                    if (checkX >= 0 && checkY >= 0 && checkX < 10 && checkY < 10) {
+                        if (field[checkX][checkY]) {
+                            return false; // Found an occupied surrounding cell
+                        }
+                    }
                 }
             }
+        }
+
+        return true; // Valid position
+    }
+
+    // Place ships
+    shipModels.forEach(shipModel => {
+        for (let k = 0; k < shipModel.count; k++) {
+            let hasPosition = false;
+            let attempts = 0;
+            const maxAttempts = 100; // Limit attempts to prevent infinite loops
+            let randomCell: { x: number; y: number };
+            let randomDirection: boolean;
+
+            // Find a valid position for the ship
+            while (!hasPosition && attempts < maxAttempts) {
+                attempts++;
+                randomCell = {
+                    x: Math.floor(Math.random() * 10), // Random x position
+                    y: Math.floor(Math.random() * 10), // Random y position
+                };
+                randomDirection = Math.random() < 0.5; // Randomly choose direction
+
+                // Check if the ship can be placed at the random position
+                if (canPlaceShip(randomCell.x, randomCell.y, shipModel.length, randomDirection)) {
+                    hasPosition = true;
+                }
+            }
+
+            // If no valid position is found after max attempts, skip to the next ship
+            if (!hasPosition) {
+                console.warn(`Unable to place ${shipModel.type} after ${maxAttempts} attempts. Moving on.`);
+                continue; // Proceed to next ship model
+            }
+
+            // Place the ship
+            const remainingCells = new Set<string>(); // To track remaining cells of the ship
+            for (let i = 0; i < shipModel.length; i++) {
+                const shipX = randomCell.x + (randomDirection ? 0 : i);
+                const shipY = randomCell.y + (randomDirection ? i : 0);
+                field[shipX][shipY] = true; // Mark cell as occupied
+                remainingCells.add(`${shipX},${shipY}`); // Add the cell to the remaining cells
+            }
+
+            const ship: ShipState = {
+                length: shipModel.length,
+                direction: randomDirection,
+                position: randomCell,
+                type: shipModel.type,
+                remainingCells: remainingCells,
+            };
+
+            ships.push(ship);
         }
     });
 

@@ -1,6 +1,13 @@
 import { WebSocket } from 'ws';
 import { User } from '../interfaces/user';
-import {getCurrentUserName, getUserByIndex, getUserByName, users, winners} from '../database/users-database';
+import {
+    getCurrentUserName,
+    getUserById,
+    getUserByIndex,
+    getUserByName,
+    users,
+    winners
+} from '../database/users-database';
 import { Command } from '../enums/command';
 import { rooms } from '../database/rooms-database';
 import { wsServer } from '../ws_server';
@@ -9,13 +16,15 @@ import {ships, shipsState} from "../database/ships-database";
 import {shipsConfiguration} from "../constants/ships-configuration";
 import {randomAttack} from "./game-commands";
 import {game} from "../database/game-database";
+import {wsClients} from "../database/ws-clients-database";
 
 export const registerResponse = (user: User, wsClient: WebSocket): void => {
+    const userIndex = users.length;
     const dataMessage = {
         error: true,
         errorText: "",
         name: user.name,
-        index: user.index,
+        index: userIndex,
         // id: user.id,
     };
     const existingUser = users.find(el => el.name === user.name)
@@ -27,11 +36,15 @@ export const registerResponse = (user: User, wsClient: WebSocket): void => {
             dataMessage.errorText = 'Wrong password';
         }
     } else {
+        const createdUser = { ...user, index:  userIndex, isPlaying: false };
 
-            users.push(user);
-            console.log('Registered user', user);
-            console.log('All users', users);
-            dataMessage.error = false;
+        users.push(createdUser);
+        wsClients.push({
+          id: user.id,
+          name: user.name,
+          ws: wsClient,
+        });
+        dataMessage.error = false;
     }
 
     wsClient.send(
@@ -39,22 +52,15 @@ export const registerResponse = (user: User, wsClient: WebSocket): void => {
             type: Command.REG,
             data: JSON.stringify(dataMessage),
             id: 0,
-            // id: user.id,
         })
     );
-    console.log('Response: ', {
-        type: Command.REG,
-        data: JSON.stringify(dataMessage),
-        id: 0,
-        // id: user.id,
-    });
 };
 
 export const updateRoomResponse = (): void => {
-    const currentUserName = getCurrentUserName();
+    // const currentUserName = getCurrentUserName();
     // const currentUser = getUserByName(currentUserName);
-    console.log('update room', currentUserName);
-    console.log(rooms, rooms[0]?.roomUsers, rooms[1]?.roomUsers, currentUserName);
+    // console.log('update room', currentUserName);
+    // console.log(rooms, rooms[0]?.roomUsers, rooms[1]?.roomUsers, currentUserName);
     // const response = {
     //     type: Commands.UPDATE_ROOM,
     //     data: JSON.stringify(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== currentUserName)),
@@ -62,16 +68,17 @@ export const updateRoomResponse = (): void => {
     //     // id: rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].index !== userId)[0]?.roomId,
     // }
 
-    let index = 0;
+    // let index = 0;
     // const currentUser = getUserByIndex(index);
     // console.log(currentUser);
     //
-    const getResponse = (index: number) => ({
-        type: Command.UPDATE_ROOM,
-        data: JSON.stringify(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name)),
-        // id: rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].index !== userId)[0]?.roomId,
-        id: 0,
-    });
+    // const getResponse = (index: number) => ({
+    //     type: Command.UPDATE_ROOM,
+    //     data: JSON.stringify(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name)),
+    //     // id: rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].index !== userId)[0]?.roomId,
+    //     id: 0,
+    // });
+
 
     // wsServer.clients.forEach(item => {
     //     // console.log(item);
@@ -88,13 +95,30 @@ export const updateRoomResponse = (): void => {
     //     index++;
     // });
 
-    wsServer.clients.forEach(item => {
-        console.log('HEY', users, index, getUserByIndex(index), rooms, rooms[0]?.roomUsers);
-        console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name));
-        getUserByIndex(index) && item.send(JSON.stringify(getResponse(index)));
-        console.log('Response update room: ', getResponse(index));
-        index++;
+    console.log(rooms);
+
+    const getResponse2 = (userName: string) => ({
+        type: Command.UPDATE_ROOM,
+        data: JSON.stringify(rooms.filter(room => (room.roomUsers.length === 1 && room.roomUsers.every(user => user.name !== userName)))),
+        // id: rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].index !== userId)[0]?.roomId,
+        id: 0,
     });
+
+    wsClients.forEach(client => {
+        const isUserPlaying = users.find(user => user.id === client.id).isPlaying;
+        const currentUserName = getUserById(client.id).name;
+
+        //do we need !isUserPlaying here
+       !isUserPlaying && client.ws.send(JSON.stringify(getResponse2(currentUserName)));
+    });
+
+    // wsServer.clients.forEach(item => {
+    //     console.log('HEY', users, index, getUserByIndex(index), rooms, rooms[0]?.roomUsers);
+    //     console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name));
+    //     getUserByIndex(index) && item.send(JSON.stringify(getResponse(index)));
+    //     console.log('Response update room: ', getResponse(index));
+    //     index++;
+    // });
 };
 
 export const updateWinnersResponse = (): void => {
@@ -107,13 +131,20 @@ export const updateWinnersResponse = (): void => {
 
     let index = 0;
 
-    wsServer.clients.forEach(item => {
-        // console.log('HEY', users, index, getUserByIndex(index), rooms, rooms[0]?.roomUsers);
-        // console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name));
-        getUserByIndex(index) &&  item.send(JSON.stringify(response));
-        console.log('Response update winners: ', response);
-        index++;
+    wsClients.forEach(client => {
+        const isUserPlaying = users.find(user => user.id === client.id).isPlaying;
+        const currentUserName = getUserById(client.id).name;
+
+        !isUserPlaying && client.ws.send(JSON.stringify(response));
     });
+
+    // wsServer.clients.forEach(item => {
+    //     // console.log('HEY', users, index, getUserByIndex(index), rooms, rooms[0]?.roomUsers);
+    //     // console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index)?.name));
+    //     getUserByIndex(index) &&  item.send(JSON.stringify(response));
+    //     console.log('Response update winners: ', response);
+    //     index++;
+    // });
 };
 
 // export const startGameResponse = (ships: ShipsPerUser[]): void => {
@@ -263,6 +294,9 @@ export const finishResponse = (userId: number): void => {
     rooms.length = 0;
     ships.length = 0;
     shipsState.length = 0;
+
+    // set isPlaying to false
+    // room.roomUsers.forEach(user => getUserByName(user.name).isPlaying = false);
 
 };
 

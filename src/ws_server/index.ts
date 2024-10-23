@@ -12,7 +12,7 @@ import {
     updateWinnersResponse
 } from '../commands/responses';
 import {addShips, attack, createGame, randomAttack, singlePlay} from '../commands/game-commands';
-import {currentUserName, setCurrentUserName} from "../database/users-database";
+import {currentUserName, setCurrentUserName, users} from "../database/users-database";
 import {ships} from "../database/ships-database";
 
 const WS_PORT = 3000;
@@ -41,8 +41,9 @@ wsServer.on('connection', (wsClient: WebSocket) => {
                 const { name } = JSON.parse(data);
 
                 currentUserId = userId;
+                console.log(currentUserId);
                 setCurrentUserName(name);
-                console.log(currentUserName);
+                // console.log(currentUserName);
 
                 registerUser(data, wsClient, userId);
                 updateRoomResponse();
@@ -51,11 +52,13 @@ wsServer.on('connection', (wsClient: WebSocket) => {
             case Command.CREATE_ROOM: {
                 console.log('create room');
                 console.log('wsServer.clients', wsServer.clients.size);
-                console.log(currentUserId);
+                console.log('data', data);
+                console.log(users, currentUserId);
                 const roomId = generateUniqueId();
-                console.log(currentUserName);
+                // console.log(currentUserName);
+                // console.log(wsClient);
 
-                createRoom(roomId);
+                createRoom(roomId, currentUserId);
                 updateRoomResponse();
                 break;
             }
@@ -101,7 +104,7 @@ wsServer.on('connection', (wsClient: WebSocket) => {
 
                 const roomId = generateUniqueId();
 
-                createRoom(roomId);
+                createRoom(roomId, currentUserId);
                 updateRoomResponse();
 
                 addUserToRoom(JSON.stringify({ indexRoom: roomId }), currentUserId);

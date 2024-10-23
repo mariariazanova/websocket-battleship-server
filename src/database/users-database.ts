@@ -19,6 +19,10 @@ export const getUserByName = (userName: string): User | undefined => {
     return users.find(user => user.name === userName);
 };
 
+export const getUserById = (userId: number): User | undefined => {
+    return users.find(user => user.id === userId);
+};
+
 export const currentUserName = [];
 
 let _currentUserName = '';

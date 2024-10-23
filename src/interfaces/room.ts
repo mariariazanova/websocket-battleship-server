@@ -1,6 +1,6 @@
-import { UserWithIndex } from "./user";
+import { User, UserWithIndex } from "./user";
 
 export interface Room {
     roomId: number;
-    roomUsers: UserWithIndex[];
+    roomUsers: UserWithIndex[]; //Partial<User>[];
 }

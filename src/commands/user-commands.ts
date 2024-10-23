@@ -7,7 +7,7 @@ export const registerUser = (data: string, wsClient: WebSocket, userId: number) 
     try {
         const { name, password } = JSON.parse(data);
         const user: User = {
-            index: users.length,
+            // index: users.length,
             id: userId,
             name: name.trim(),
             password: password.trim(),

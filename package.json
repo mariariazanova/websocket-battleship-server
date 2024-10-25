@@ -2,11 +2,10 @@
     "name": "ws_task",
     "version": "1.0.0",
     "description": "Template for the WebSocket remote control task",
-    "main": "index.ts",
-    "type": "module",
+    "main": "src/index.ts",
     "scripts": {
-        "start": "tsx ./index.ts",
-        "start:dev": "tsx watch ./index.ts",
+        "start": "webpack --mode production && node ./dist/index.js",
+        "start:dev": "nodemon",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Maria Riazanova",
@@ -18,7 +17,12 @@
     "devDependencies": {
         "@types/node": "^22.7.7",
         "@types/ws": "^8.5.10",
+        "nodemon": "^3.0.1",
+        "ts-loader": "^9.5.1",
         "ts-node": "^10.9.2",
-        "tsx": "^4.7.1"
+        "tsx": "^4.7.1",
+        "typescript": "^5.6.3",
+        "webpack": "^5.95.0",
+        "webpack-cli": "^5.1.4"
     }
 }

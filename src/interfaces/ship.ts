@@ -1,4 +1,4 @@
-import {ShipType} from "../enums/ship-type";
+import { ShipType } from '../enums/ship-type';
 
 export interface Ship {
     position: { x: number; y: number };
@@ -9,6 +9,7 @@ export interface Ship {
 
 export interface ShipsPerUser {
     userId: number;
+    gameId: number;
     ships: ShipState[];
 }
 

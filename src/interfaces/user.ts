@@ -1,9 +1,11 @@
 export interface User {
-    id: number,
+    id: number | string,
     name: string,
     password: string,
-    index?: number,
+    index?: number | string
     isPlaying?: boolean;
+    isRegistered?: boolean;
+    isTurn?: boolean;
 }
 
 export interface UserWithIndex extends Pick<User, 'name' | 'index'> {
@@ -11,7 +13,7 @@ export interface UserWithIndex extends Pick<User, 'name' | 'index'> {
 }
 
 export interface Winner {
-    id: number,
+    id: number | string,
     name: string,
     wins: number,
 }

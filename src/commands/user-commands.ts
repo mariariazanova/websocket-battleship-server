@@ -1,22 +1,14 @@
 import { WebSocket } from 'ws';
 import { User } from '../interfaces/user';
-import { registerResponse } from './responses';
-import { users } from '../database/users-database';
+import { registerResponse } from '../responses/user-responses';
 
 export const registerUser = (data: string, wsClient: WebSocket, userId: number) => {
-    try {
-        const { name, password } = JSON.parse(data);
-        const user: User = {
-            // index: users.length,
-            id: userId,
-            name: name.trim(),
-            password: password.trim(),
-        };
+  const { name, password } = JSON.parse(data);
+  const user: User = {
+    id: userId,
+    name: name.trim(),
+    password: password.trim(),
+  };
 
-        registerResponse(user, wsClient);
-        // updateRoomResponse();
-
-    } catch (error) {
-
-    }
+  registerResponse(user, wsClient);
 };

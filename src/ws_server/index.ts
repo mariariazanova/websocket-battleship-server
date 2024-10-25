@@ -1,19 +1,17 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Command } from '../enums/command';
 import { registerUser } from '../commands/user-commands';
-// import { generateUuid } from '../utils/generate-uuid';
 import { addUserToRoom, createRoom } from '../commands/room-commands';
 import { generateUniqueId } from '../utils/generate-uuid';
 import {
     getRandomShips, initializeShipStates,
-    startGameResponse,
-    turnResponse,
-    updateRoomResponse,
-    updateWinnersResponse
 } from '../commands/responses';
-import {addShips, attack, createGame, randomAttack, singlePlay} from '../commands/game-commands';
-import {currentUserName, setCurrentUserName, users} from "../database/users-database";
-import {ships} from "../database/ships-database";
+import { addShips, attack, randomAttack } from '../commands/game-commands';
+import { users } from '../database/users-database';
+import { wsClients } from '../database/ws-clients-database';
+import { createGameResponse, startGameResponse, turnResponse } from '../responses/game-responses';
+import { updateRoomResponse } from '../responses/room-responses';
+import { updateWinnersResponse } from '../responses/user-responses';
 
 const WS_PORT = 3000;
 export const wsServer = new WebSocketServer({ port: WS_PORT });
@@ -23,66 +21,46 @@ wsServer.on('listening', () => {
 });
 
 wsServer.on('connection', (wsClient: WebSocket) => {
-    console.log("Client connected");
-    let currentUserId: number;
-    // let currentUserName: string;
+  console.log('New client connected');
+  let currentUserId: number;
 
-    wsClient.on('message', (message) => {
-        console.log(`Received ${message}`);
-        // const id = generateId();
+  wsClient.on('message', (message) => {
+    const { type, data, id } = JSON.parse(message.toString());
 
+    console.log('Received command:', { type, data: data.length ? JSON.parse(data) : '', id });
 
-        const { type, data } = JSON.parse(message.toString());
+    switch (type) {
+      case Command.REG:
+        const userId = generateUniqueId();
 
-        switch (type) {
-            case Command.REG:
-                console.log('register user');
-                const userId = generateUniqueId();
-                const { name } = JSON.parse(data);
+        currentUserId = userId;
+        registerUser(data, wsClient, userId);
+        updateRoomResponse();
+        updateWinnersResponse();
+        break;
+      case Command.CREATE_ROOM: {
+        const roomId = generateUniqueId();
 
-                currentUserId = userId;
-                console.log(currentUserId);
-                setCurrentUserName(name);
-                // console.log(currentUserName);
-
-                registerUser(data, wsClient, userId);
-                updateRoomResponse();
-                updateWinnersResponse();
-                break;
-            case Command.CREATE_ROOM: {
-                console.log('create room');
-                console.log('wsServer.clients', wsServer.clients.size);
-                console.log('data', data);
-                console.log(users, currentUserId);
-                const roomId = generateUniqueId();
-                // console.log(currentUserName);
-                // console.log(wsClient);
-
-                createRoom(roomId, currentUserId);
-                updateRoomResponse();
-                break;
-            }
-            case Command.ADD_USER_TO_ROOM: {
-                console.log('add user to room');
-                console.log(currentUserId);
-                console.log(currentUserName);
-                addUserToRoom(data, currentUserId);
-                updateRoomResponse();
-                createGame(data, currentUserId);
-                break;
-            }
-            case Command.ADD_SHIPS: {
-                console.log('add ships')
-                addShips(data);
-                ships.length === 2 && startGameResponse();
-                turnResponse();
-                break;
-            }
-            case Command.ATTACK: {
-                console.log('attack');
-                attack(data);
-                break;
-            }
+        createRoom(roomId, currentUserId);
+        updateRoomResponse();
+        break;
+      }
+      case Command.ADD_USER_TO_ROOM: {
+        addUserToRoom(data, currentUserId);
+        updateRoomResponse();
+        createGameResponse(data, currentUserId);
+        break;
+      }
+      case Command.ADD_SHIPS: {
+        addShips(data);
+        startGameResponse(data);
+        // turnResponse();
+        break;
+      }
+      case Command.ATTACK: {
+        attack(data);
+        break;
+      }
             case Command.RANDOM_ATTACK: {
                 console.log('random attack');
                 console.log(data);
@@ -111,18 +89,52 @@ wsServer.on('connection', (wsClient: WebSocket) => {
                 addUserToRoom(JSON.stringify({ indexRoom: roomId }), 111111);
 
                 updateRoomResponse();
-                createGame(data, currentUserId);
+                createGameResponse(data, currentUserId);
                 console.log('bot ships', getRandomShips());
-                addShips(JSON.stringify({
+                const shipsData = JSON.stringify({
                     indexPlayer: 111111,
                     ships: initializeShipStates(getRandomShips()),
-                }));
-
-                ships.length === 2 && startGameResponse();
-                turnResponse();
+                });
+                addShips(shipsData);
+                startGameResponse(shipsData);
+                turnResponse(88);
 
                 break;
             }
-        }
-    });
+    }
+  });
+
+  wsClient.on('close', () => {
+   console.log('Client disconnected', currentUserId);
+
+   const disconnectedUser = users.find(user => user.id === currentUserId);
+
+   if (disconnectedUser) {
+     disconnectedUser.isRegistered = false;
+   }
+   console.log(users);
+
+   console.log('777', wsClient.readyState);
+  });
+
+  wsClient.on('error', (error) => {
+    console.error('WebSocket error:', error);
+    wsClient.close();
+    console.log('WebSocket server closed');
+    process.exit(1);
+  });
 });
+
+process.on('SIGINT', () => {
+  wsClients.forEach((client) => {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.close(1000, 'Server shutting down');
+    }
+  });
+
+  wsServer.close(() => {
+    console.log('WebSocket server closed');
+    process.exit(0);
+  });
+});
+

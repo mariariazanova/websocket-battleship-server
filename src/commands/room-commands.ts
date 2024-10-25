@@ -1,98 +1,63 @@
 import { Room } from '../interfaces/room';
-// import { generateUuid } from '../utils/generate-uuid';
-import {getCurrentUserName, getUserById, getUserByName, users} from '../database/users-database';
-// import { generateId } from '../utils/generate-uuid';
+import { getUserById, getUserByName } from '../database/users-database';
 import { rooms } from '../database/rooms-database';
-// import { updateRoomResponse } from './responses';
-// import { UserWithIndex} from "../interfaces/user";
+import { UserWithIndex } from '../interfaces/user';
+import { isUserPlayingInGame } from '../utils/is-user-playing';
 
 export const createRoom = (roomId: number, userId: number): void => {
-    try {
-        const currentUser = getUserById(userId);
-        const currentUserName = currentUser.name;
-        // const currentUser = getUserByName(currentUserName);
-        // console.log('currentUserName', currentUserName);
-        // console.log(users, currentUserName);
-        // console.log(rooms, rooms.every(room => room.roomUsers.every(user => user.name !== currentUserName)));
+  const currentUser = getUserById(userId);
+  const isUserPlaying = isUserPlayingInGame(userId);
 
-        if (rooms.every(room => room.roomUsers.every(user => user.name !== currentUserName))) {
-            const room: Room = {
-                roomId,
-                roomUsers: [{ name: currentUserName || '', index: currentUser.index }],
-                // roomUsers: [{ name: users[0].name || '', index: users[0].id }],
-            };
+  if (currentUser && !isUserPlaying) {
+    const room: Room = {
+      roomId,
+      roomUsers: [{ name: currentUser.name, index: <number>currentUser.index }],
+    };
 
-            rooms.push(room);
-            console.log(rooms);
-        }
-
-        // const room: Room = {
-        //     roomId,
-        //     roomUsers: [{ name: currentUserName || '', index: currentUser.index }],
-        //     // roomUsers: [{ name: users[0].name || '', index: users[0].id }],
-        // };
-
-        // rooms.push(room);
-        // console.log(rooms);
-        // updateRoomResponse();
-
-    } catch (error) {
-        throw new Error(
-            error instanceof Error ? error.message : 'createRoom error'
-        );
-    }
+    rooms.push(room);
+  }
 }
 
 export function addUserToRoom(data: any, userId: number): void {
-    console.log('addUserToRoom', data, userId);
-    console.log(rooms);
-    // console.log(users);
-    // console.log(userId);
-    const { indexRoom } = JSON.parse(data);
+  const { indexRoom } = JSON.parse(data);
+  const currentUser = getUserById(userId);
+  const isUserPlaying = isUserPlayingInGame(userId);
+  // console.log(currentUser, isUserPlaying);
 
-
-    const currentUser = getUserById(userId);
-    const currentUserName = currentUser.name;
-    console.log(currentUserName, currentUser)
-
-    // const user =
-    //     users.find(user => user.index === userId);
-    // const user =
-    //     users.find(user => user.id === userId);
+  if (currentUser && !isUserPlaying) {
     const roomUser = {
-        name: currentUserName,
-        index: currentUser.index,
-        // index: user.id,
+      name: currentUser.name,
+      index: currentUser.index,
     };
-    // if (!user) return [];
-    // const roomUser: UserWithIndex = {
-    //     name: user.name,
-    //     index: wsIndex,
-    // }
     const room = rooms.find(item => item.roomId === indexRoom);
-    // if (!room) return [];
-    // if (!room.roomUsers.filter(item => item.index !== wsIndex).length) return [];
-    if (room.roomUsers.length === 1) {
-        // add user to existing room
-        room.roomUsers.push(roomUser);
-        room.roomUsers.forEach(user => getUserByName(user.name).isPlaying = true);
+    // console.log(room);
 
-        // delete room created by user
-        const index = rooms.findIndex(room => room.roomUsers.length === 1 && room.roomUsers.find(user => user.name === currentUserName));
+    if (room && room.roomUsers && room.roomUsers.length === 1) {
+      room.roomUsers.push(<UserWithIndex>roomUser);
+      // room.roomUsers.forEach(user => {
+      //   const foundUser = getUserByName(user.name);
+      //   console.log(foundUser);
+      //
+      //   if (foundUser) {
+      //     foundUser.isPlaying = true;
+      //   }
+      // });
+      // console.log(room);
 
-// If the object is found, remove it from the array
-        if (index !== -1) {
-            rooms.splice(index, 1);
-        }
-
-        // rooms = rooms.filter(room => room.roomUsers.length === 1 && room.roomUsers.find(user => user.name === currentUserName));
+      // delete room created by user
+      deleteUnnecessaryRoom(currentUser.name);
     }
+  }
+}
 
+function deleteUnnecessaryRoom(userName: string): void {
+    // console.log(userName);
+  const unnecessaryRoomIndex = rooms.findIndex(room => room.roomUsers.length === 1 && room.roomUsers.find(user => user.name === userName));
 
-    //
-    // const players: Players = room.roomUsers.map(item => item.index);
-    //
-    // deleteRoom(wsIndex);
-    //
-    // return players;
+  // console.log(rooms, unnecessaryRoomIndex);
+
+  if (unnecessaryRoomIndex !== -1) {
+    rooms.splice(unnecessaryRoomIndex, 1);
+    // console.log(rooms);
+  }
 }

@@ -23,6 +23,22 @@ export const getUserById = (userId: number | string): User | undefined => {
     return users.find(user => user.id === userId);
 };
 
+export const updateUser = (userId: number | string, newUserId: number | string): void => {
+    const user = getUserById(userId);
+
+    if (user) {
+        user.id = newUserId;
+    }
+}
+
+export const updateUserRegisteredState = (userName: string): void => {
+    const user = getUserByName(userName);
+
+    if (user) {
+        user.isRegistered = true;
+    }
+}
+
 // export const currentUserName = [];
 
 // let _currentUserName = '';

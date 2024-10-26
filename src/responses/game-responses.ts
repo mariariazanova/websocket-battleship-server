@@ -1,56 +1,54 @@
 import { randomUUID } from 'crypto';
 import { Command } from '../enums/command';
-import {getRoomUserByUserId, getRoomUserByUserName, rooms} from '../database/rooms-database';
-import { wsClients } from '../database/ws-clients-database';
-import {getUserById, getUserByIndex, getUserByName, users} from '../database/users-database';
+import {
+  getRoomByUserId,
+  getRoomUserByUserId,
+  getRoomUserByUserName,
+  getRoomUsers,
+  getRoomUsersByUserId,
+  rooms
+} from '../database/rooms-database';
+import {getWebSocketByUserId, getWsClientByUserId, wsClients} from '../database/ws-clients-database';
+import {getUserById, getUserByName, loggedUsers} from '../database/users-database';
 import { sendResponse } from '../utils/send-response';
-import {ShipsPerUser, ShipState} from '../interfaces/ship';
+import { ShipState } from '../interfaces/ship';
 import { isUserPlayingInGame } from '../utils/is-user-playing';
 import { randomAttack } from '../commands/game-commands';
 import { isSinglePlay } from '../utils/is-single-play';
 import { updateWinnersResponse } from './user-responses';
-import { finishResponse } from '../commands/responses';
 import { getAttackResult } from '../utils/get-attack-result';
 import { isGameFinished } from '../utils/is-game-finished';
-import {AttackResultState} from "../enums/attack-result-state";
+import { AttackResultState } from '../enums/attack-result-state';
+import { Room } from '../interfaces/room';
 
 export const createGameResponse = (data: any, userId: string): void => {
-  // console.log('createGameResponse', userId);
   const { indexRoom } = JSON.parse(data);
   const gameId = randomUUID();
 
-  // games.push({ gameId });
-
   const getGameInfo = (userId: string) => ({ idGame: gameId, idPlayer: userId });
   const roomToPlay = rooms.find(room => room.roomId === indexRoom);
+  const roomUsers = getRoomUsersByUserId(userId);
 
   if (roomToPlay) {
     roomToPlay.gameId = gameId;
 
-    wsClients.forEach(client => {
-      const currentUser = getUserById(client.id);
-      // console.log(currentUser, client.id);
+    roomUsers?.forEach((roomUser) => {
+      const user = getUserByName(roomUser?.name || '');
 
-      if (currentUser) {
-        const isUserPlayingInRoom = roomToPlay.roomUsers.find(user => user.name === currentUser.name);
-
-        currentUser.isPlaying = true;
-        isUserPlayingInRoom && sendResponse(client.id, Command.CREATE_GAME, getGameInfo(client.id));
-        // isUserPlayingInRoom && sendResponse(client.ws, Command.CREATE_GAME, getGameInfo(client.id));
+      if (user) {
+        user.isPlaying = true;
       }
+
+      sendResponse(roomUser.userId, Command.CREATE_GAME, getGameInfo(roomUser.userId));
     });
   }
 };
 
 export const startGameResponse = (data: any): void => {
-  // console.log('startGameResponse', data);
   const { gameId } = JSON.parse(data);
   const room = rooms.find(room => room.gameId === gameId);
-  console.log('rooms', rooms);
-  const roomUsers = <ShipsPerUser[]>room?.roomUsers;
+  const roomUsers = getRoomUsers(<Room>room);
 
-
-  // const areAllShipsSetForBothUsers = roomUsers?.every(user => user.ships.length > 0);
   const areAllShipsSetForBothUsers = roomUsers.every(
       (user) => Array.isArray(user.ships) && !!user.ships.length
   );
@@ -58,60 +56,43 @@ export const startGameResponse = (data: any): void => {
   if (areAllShipsSetForBothUsers) {
     const getUserShips = (userId: string): ShipState[] | undefined => roomUsers.find((user) => user.userId == userId)?.ships;
 
-    wsClients.forEach(client => {
-      const currentUser = getUserById(client.id);
+    roomUsers?.forEach((roomUser) => {
+      const user = getUserByName(roomUser?.name || '');
+      const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
-      if (currentUser) {
-        const isUserPlaying = isUserPlayingInGame(currentUser.id);
-
-        isUserPlaying && sendResponse(client.id, Command.START_GAME, getUserShips(client.id));
-        // isUserPlaying && sendResponse(client.ws, Command.START_GAME, getUserShips(client.id));
-        isUserPlaying && turnResponse(roomUsers[0].userId);
-      }
+      isUserPlaying && sendResponse(roomUser.userId, Command.START_GAME, getUserShips(roomUser.userId));
+      isUserPlaying && turnResponse(roomUsers[0].userId);
     });
   }
 };
 
 export const turnResponse = (userId: string): void => {
-  console.log('userId fot turn', userId);
-  // let index = 0;
+  const roomUsers = getRoomUsersByUserId(userId);
 
   const getTurnData = (): Record<string, number | string> | undefined=> {
-  // const turnData = {
     const user = getUserById(userId);
-    // let turnData: Record<string, number> | undefined;
 
     if (user) {
-      // console.log('user turn', user);
+      const enemyRoomUser = getRoomUserByUserId(userId, false);
+
       user.isTurn = true;
-      const room = rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === user.name));
-      // const enemy = room?.roomUsers
-      if (room) {
-        const enemyInRoom = room.roomUsers.find(roomUser => roomUser.name !== user.name);
 
-        if (enemyInRoom) {
-          const enemy = getUserByName(<string>enemyInRoom.name);
+      if (enemyRoomUser) {
+        const enemy = getUserByName(<string>enemyRoomUser.name);
 
-          if (enemy) {
-            // console.log('enemy', enemy);
-            enemy.isTurn = false;
-          }
+        if (enemy) {
+          enemy.isTurn = false;
         }
+
+        return { currentPlayer: userId || user.id };
       }
-      // console.log(user, { currentPlayer: userId || user.id });
-      return { currentPlayer: userId || user.id };
-      // turnData = { currentPlayer: userId || user.id };
     }
   };
 
-  wsClients.forEach(client => {
-    const isUserPlaying = isUserPlayingInGame(client.id);
-    // console.log(client.id, isUserPlaying);
-    // console.log(users);
+  roomUsers?.forEach((roomUser) => {
+    const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
-    // isUserPlaying && sendResponse(client.ws, Command.TURN, getTurnData());
-    isUserPlaying && sendResponse(client.id, Command.TURN, getTurnData());
-    // index++;
+    isUserPlaying && sendResponse(roomUser.userId, Command.TURN, getTurnData());
   });
 
   if (isSinglePlay() && userId === '111111') {
@@ -121,38 +102,24 @@ export const turnResponse = (userId: string): void => {
       // not game, but use games
       randomAttack(JSON.stringify({ gameId: 'gameId', indexPlayer: 111111 }));
     }, 1500);
-
-    // randomAttack(JSON.stringify({ gameId: game.gameId, indexPlayer: 111111 }));
   }
 };
 
 export const attackResponse = (userId: string, x: number, y: number): void => {
-  // let index = 0;
   const { attackResultStatus, surroundingCells } = getAttackResult(x, y, userId);
-  // console.log(attackResult);
   const attackData = {
     position: { x, y },
     currentPlayer: userId,
     status: attackResultStatus,
   };
+  const roomUsers = getRoomUsersByUserId(userId);
 
-  // const response = {
-  //   type: Command.ATTACK,
-  //   data: JSON.stringify({
-  //     position: { x, y },
-  //     currentPlayer: userId,//getUserByIndex(index).id,
-  //     status: attackResult,
-  //   }),
-  //   id: 0,
-  // };
+  roomUsers?.forEach((roomUser) => {
+    const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
-  wsClients.forEach(client => {
-    const isUserPlaying = isUserPlayingInGame(client.id);
-
-    isUserPlaying && sendResponse(client.id, Command.ATTACK, attackData);
+    isUserPlaying && sendResponse(roomUser.userId, Command.ATTACK, attackData);
 
     if (attackResultStatus === AttackResultState.Killed) {
-      console.log('killed', surroundingCells);
       surroundingCells?.forEach(cell => {
         const [x, y] = cell.split(',').map(Number);
         const clearCellsData = {
@@ -160,33 +127,54 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
           currentPlayer: userId,
           status: AttackResultState.Miss,
         };
-        const roomUser = getRoomUserByUserName(client.name);
 
-        isUserPlaying && sendResponse(client.id, Command.ATTACK, clearCellsData);
-        roomUser?.shots?.add(`${x},${y}`);
+        isUserPlaying && sendResponse(roomUser.userId, Command.ATTACK, clearCellsData);
+
+        if (roomUser.userId === userId) {
+          roomUser?.shots?.add(`${x},${y}`);
+        }
       });
     }
-    // isUserPlaying && sendResponse(client.ws, Command.ATTACK, attackData);
   });
 
-  const room = rooms.find(room => room.roomUsers.some(user => user.userId === userId));
-  const roomUsers = room?.roomUsers || [];
-  const enemyUserId = roomUsers.find(user => user.userId !== userId)?.userId;
-
-  console.log('nextUser not', userId, users, enemyUserId, attackResultStatus);
+  const enemyRoomUser = getRoomUserByUserId(userId, false);
+  const enemyUserId = enemyRoomUser?.userId;
 
   if (enemyUserId && isGameFinished(enemyUserId)) {
-    console.log("Game is finished! All ships have been destroyed.");
     finishResponse(userId);
     updateWinnersResponse();
     return;
   }
 
   turnResponse(attackResultStatus !== AttackResultState.Miss ? userId : <string>enemyUserId);
+};
 
-  // if (isSinglePlay()) {
-  //     console.log('single play');
-  //
-  //     randomAttack(JSON.stringify({ gameId: game.gameId, indexPlayer: 111111 }));
-  // }
+export const finishResponse = (userId: string): void => {
+  const finishData = { winPlayer: userId };
+
+  const roomUsers = getRoomUsersByUserId(userId);
+
+  roomUsers?.forEach((roomUser) => {
+    const isUserPlaying = isUserPlayingInGame(roomUser.userId);
+    const user = getUserByName(roomUser?.name || '');
+
+    if (user) {
+      user.isPlaying = false;
+      user.isTurn = false;
+    }
+
+    isUserPlaying && sendResponse(roomUser.userId, Command.FINISH, finishData);
+  });
+
+  const newWinner = loggedUsers.find((user) => user.name === getUserById(userId)?.name);
+
+  if (newWinner) {
+    newWinner.wins += 1;
+  }
+
+  const index = rooms.findIndex(room => room.roomId === room.roomId);
+
+  if (index !== -1) {
+    rooms.splice(index, 1)
+  }
 };

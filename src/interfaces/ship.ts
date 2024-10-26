@@ -18,5 +18,5 @@ export interface ShipsPerUser {
 
 export interface ShipState extends Ship {
     remainingCells: Set<string>;
-    occupiedCells: Set<string>;
+    occupiedCells?: Set<string>;
 }

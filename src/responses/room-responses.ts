@@ -16,7 +16,6 @@ export const updateRoomResponse = (): void => {
       const isUserPlaying = isUserPlayingInGame(currentUser.id);
 
       !isUserPlaying && sendResponse(client.id, Command.UPDATE_ROOM, getRoomsWithOneAnotherUser(currentUser.name));
-      // !isUserPlaying && sendResponse(client.ws, Command.UPDATE_ROOM, getRoomsWithOneUser(currentUser.name));
     }
   });
 };

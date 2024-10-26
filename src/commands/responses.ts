@@ -14,91 +14,8 @@ import { shipsConfiguration } from '../constants/ships-configuration';
 import { randomAttack } from './game-commands';
 import { wsClients } from '../database/ws-clients-database';
 import { isUserPlayingInGame } from '../utils/is-user-playing';
-import { Room } from '../interfaces/room';
-import { sendResponse } from '../utils/send-response';
-import {turnResponse} from "../responses/game-responses";
-import {updateWinnersResponse} from "../responses/user-responses";
-import {AttackResultState} from "../enums/attack-result-state";
 
 
-
-
-
-
-
-
-
-
-
-export const finishResponse = (userId: string): void => {
-    console.log('finish');
-
-    const response = {
-        type: Command.FINISH,
-        data: JSON.stringify({
-            winPlayer: userId,
-        }),
-        id: 0,
-    };
-
-    wsClients.forEach(client => {
-        // wsServer.clients.forEach(item => {
-        // console.log('HEY', users, index, getUserByIndex(index));
-        // console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index).name));
-        // item.send(JSON.stringify(getResponse(index)));
-        const isUserPlaying = isUserPlayingInGame(client.id);
-    // wsServer.clients.forEach(item => {
-        // rooms.find(item => item.roomId === indexRoom);
-
-        isUserPlaying && client.ws.send(JSON.stringify(response));
-        console.log('Response turn: ', response);
-    });
-
-    const newWinner = loggedUsers.find((user) => user.name === getUserById(userId)?.name);
-
-    if (newWinner) {
-        newWinner.wins += 1;
-    }
-
-    // if (newWinner?.wins === 0) {
-    //     newWinner.wins += 1;
-    // } else {
-    //     newWinner.wins = 1;
-    //     // winners.push({
-    //     //     id: userId,
-    //     //     name: users.find(user => user.id === userId)?.name || "",
-    //     //     wins: 1,
-    //     // });
-    // }
-
-    const room = rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === getUserById(userId)?.name));
-
-    room?.roomUsers.forEach(roomUser => {
-        const foundUser = getUserByName(roomUser?.name || '');
-
-        if (foundUser) {
-            foundUser.isPlaying = false;
-            foundUser.isTurn = false;
-        }
-    })
-
-    //delete room
-    const index = rooms.findIndex(room => room.roomId === room.roomId);
-
-    if (index !== -1) {
-        rooms.splice(index, 1)
-    }
-
-    //delete ships
-    // const shipIndex = ships.findIndex(shipConfig => shipConfig.userId === userId);
-    //
-    // if (shipIndex !== -1) {
-    //     ships.splice(index, 1)
-    // }
-
-    // shipsState.length = 0;
-
-};
 
 export function initializeShipStates(ships: Ship[]): ShipState[] {
   return ships.map(ship => {
@@ -197,13 +114,13 @@ export function getRandomShips(): ShipState[] {
 
             // Place the ship
             const remainingCells = new Set<string>();
-            const occupiedCells = new Set<string>();
+            // const occupiedCells = new Set<string>();
             for (let i = 0; i < shipModel.length; i++) {
                 const shipX = randomCell.x + (randomDirection ? 0 : i);
                 const shipY = randomCell.y + (randomDirection ? i : 0);
                 field[shipX][shipY] = true; // Mark cell as occupied
                 remainingCells.add(`${shipX},${shipY}`);
-                occupiedCells.add(`${shipX},${shipY}`);
+                // occupiedCells.add(`${shipX},${shipY}`);
             }
 
             const ship: ShipState = {
@@ -212,7 +129,7 @@ export function getRandomShips(): ShipState[] {
                 position: randomCell,
                 type: shipModel.type,
                 remainingCells: remainingCells,
-                occupiedCells:  occupiedCells,
+                // occupiedCells:  occupiedCells,
             };
 
             ships.push(ship);
@@ -220,37 +137,4 @@ export function getRandomShips(): ShipState[] {
     });
 
     return ships;
-}
-
-// function processAttackResult(x: number, y: number, userId: string): "miss" | "shot" | "killed" {
-//     console.log(x, y, userId);
-//
-//     const enemyShips = ships.find(shipsPerUser => shipsPerUser.userId !== userId)?.ships ?? [];
-//     const coordinate = `${x},${y}`;
-//     console.log(enemyShips);
-//
-//     for (const ship of enemyShips) {
-//         if (ship.remainingCells.has(coordinate)) {
-//             // The shot hits this ship
-//             ship.remainingCells.delete(coordinate);
-//             console.log(ship.remainingCells);
-//
-//             if (ship.remainingCells.size === 0) {
-//                 // The ship is killed
-//                 return AttackResultState.Killed;
-//             } else {
-//                 // The ship is just shot
-//                 return AttackResultState.Shot;
-//             }
-//         }
-//     }
-//
-//     // If no ship is hit, it's a miss
-//     return AttackResultState.Miss;
-// }
-
-
-
-function isSinglePlay(): boolean {
-    return !!users.find(user => user.name === 'bot');
 }

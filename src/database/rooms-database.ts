@@ -33,15 +33,12 @@ export const getRoomUserByUserName = (userName: string): ShipsPerUser | undefine
     // getRoomUsersByUserName(userName)?.find(roomUser => roomUser.userId === getUserByName(userName)?.id);
 }
 
-export const getRoomUserByUserId = (userId: string): ShipsPerUser | undefined => {
-    const roomUsers = getRoomUsersByUserId(userId);
-    // const user = getUserByName(userName);
+export const getRoomUserByUserId = (userId: string, isUser = true): ShipsPerUser | undefined => {
+  const roomUsers = getRoomUsersByUserId(userId);
 
-    // Ensure roomUsers is an array and user is defined before trying to find
-    if (roomUsers) {
-        return roomUsers.find(roomUser => roomUser.userId === userId);
-    }
+  if (roomUsers) {
+    return roomUsers.find(roomUser => isUser ? roomUser.userId === userId : roomUser.userId !== userId);
+  }
 
-    return undefined; // Return undefined if either roomUsers or user is not found
-    // getRoomUsersByUserName(userName)?.find(roomUser => roomUser.userId === getUserByName(userName)?.id);
+  return undefined;
 }

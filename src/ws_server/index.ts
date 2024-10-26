@@ -4,32 +4,27 @@ import { Command } from '../enums/command';
 import { registerUser } from '../commands/user-commands';
 import { addUserToRoom, createRoom } from '../commands/room-commands';
 import {
-    finishResponse,
     getRandomShips, initializeShipStates,
 } from '../commands/responses';
 import { addShips, attack, randomAttack } from '../commands/game-commands';
 import {getUserById, getUserByName, loggedUsers, users} from '../database/users-database';
 import { wsClients } from '../database/ws-clients-database';
-import { createGameResponse, startGameResponse, turnResponse } from '../responses/game-responses';
+import { createGameResponse, finishResponse, startGameResponse, turnResponse } from '../responses/game-responses';
 import { updateRoomResponse } from '../responses/room-responses';
 import { updateWinnersResponse } from '../responses/user-responses';
-import {rooms} from "../database/rooms-database";
+import {getRoomByUserId, getRoomUserByUserId, rooms} from "../database/rooms-database";
 
 const WS_PORT = 3000;
 export const wsServer = new WebSocketServer({ port: WS_PORT });
 
 wsServer.on('listening', () => {
-    console.log(`Websocket server is running on ${WS_PORT} port`);
-    // console.log(users, loggedUsers);
+  console.log(`Websocket server is running on ${WS_PORT} port`);
 });
 
 wsServer.on('connection', (wsClient: WebSocket) => {
   const userId = randomUUID();
-    console.log(`New client with id ${userId} connected`);
-    console.log(loggedUsers, rooms);
-    console.log(wsClients[0]?.id, wsClients[0]?.index, wsClients[0]?.name, wsClients[0]?.isPlaying, wsClients[0]?.isTurn);
-    console.log(wsClients[1]?.id, wsClients[1]?.index, wsClients[1]?.name, wsClients[1]?.isPlaying, wsClients[1]?.isTurn);
-    console.log(wsClients[2]?.id, wsClients[2]?.index, wsClients[2]?.name, wsClients[2]?.isPlaying, wsClients[2]?.isTurn);
+
+  console.log(`New client with id ${userId} connected`);
 
   wsClient.on('message', (message) => {
     const { type, data, id } = JSON.parse(message.toString());
@@ -58,7 +53,6 @@ wsServer.on('connection', (wsClient: WebSocket) => {
       case Command.ADD_SHIPS: {
         addShips(data);
         startGameResponse(data);
-        // turnResponse();
         break;
       }
       case Command.ATTACK: {
@@ -66,7 +60,6 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         break;
       }
       case Command.RANDOM_ATTACK: {
-        console.log(data);
         randomAttack(data);
         break;
       }
@@ -105,59 +98,41 @@ wsServer.on('connection', (wsClient: WebSocket) => {
    console.log(`Client with id ${userId} disconnected`);
 
    const disconnectedUser = wsClients.find(user => user.id === userId);
-   const disconnectedLoggedUser = loggedUsers.find(user => user.name === disconnectedUser?.name);
-   const roomWithUser = rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === getUserById(userId)?.name));
+   const roomWithUser = getRoomByUserId(userId);
 
    if (roomWithUser) {
-       const roomIndex = rooms.findIndex(room => room.roomId === roomWithUser.roomId);
-       const roomUsers = roomWithUser.roomUsers;
-       const enemyUserName = roomUsers?.find(user => user.userId !== userId)?.name;
-       const isUserPlaying = wsClients.find(user => user.name === getUserById(userId)?.name)?.isPlaying;
+     const roomIndex = rooms.findIndex(room => room.roomId === roomWithUser.roomId);
+     const enemyRoomUser = getRoomUserByUserId(userId, false);
+     const isUserPlaying = wsClients.find(user => user.name === getUserById(userId)?.name)?.isPlaying;
 
-       if (isUserPlaying) {
-           const user = loggedUsers.find(user => user.name === enemyUserName);
+     if (isUserPlaying) {
+       const user = loggedUsers.find(user => user.name === enemyRoomUser?.name);
 
-           if (user) {
-               user.wins += 1;
-           }
-
-           // wsClients.find(user => user.name === enemyUserName)?.ws.send();
-           finishResponse(getUserByName(<string>enemyUserName)?.id || '');
-           updateWinnersResponse();
+       if (user) {
+         user.wins += 1;
        }
 
-       if (roomIndex !== -1) {
-           rooms.splice(roomIndex, 1);
-       }
+       finishResponse(enemyRoomUser?.userId || '');
+       updateWinnersResponse();
+     }
+
+     if (roomIndex !== -1) {
+       rooms.splice(roomIndex, 1);
+     }
    }
-
-   // if (disconnectedLoggedUser) {
-   //     disconnectedLoggedUser.isRegistered = false;
-   // }
 
    if (disconnectedUser) {
-       // users.filter(user => user.id !== disconnectedUser.id);
-       const userIndex = wsClients.findIndex(user => user.id === disconnectedUser.id);
+     const userIndex = wsClients.findIndex(user => user.id === disconnectedUser.id);
 
-       if (userIndex !== -1) {
-           wsClients.splice(userIndex, 1);
-       }
-
-       // const wsIndex = wsClients.findIndex(ws => ws.id === disconnectedUser.id);
-       //
-       // if (userIndex !== -1) {
-       //     wsClients.splice(userIndex, 1);
-       // }
+     if (userIndex !== -1) {
+       wsClients.splice(userIndex, 1);
+     }
    }
-   // console.log(disconnectedUser, disconnectedLoggedUser, users, loggedUsers);
-   //
-   // console.log('777', wsClient.readyState);
   });
 
   wsClient.on('error', (error) => {
     console.error('WebSocket error:', error);
     wsClient.close();
-    console.log('WebSocket server closed');
     process.exit(1);
   });
 });

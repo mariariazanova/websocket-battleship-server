@@ -14,10 +14,9 @@ export const getAttackResult = (x: number, y: number, userId: string): AttackRes
   for (const ship of enemyShips) {
     if (ship.remainingCells.has(coordinate)) {
       ship.remainingCells.delete(coordinate);
-      // console.log(ship.remainingCells);
 
       if (ship.remainingCells.size === 0) {
-        const surroundingCells = getSurroundingCells(ship.occupiedCells);
+        const surroundingCells = getSurroundingCells(<Set<string>>ship.occupiedCells);
 
         return { attackResultStatus: AttackResultState.Killed, surroundingCells };
       } else {

@@ -4,6 +4,7 @@ import { WebSocket } from 'ws';
 
 export const wsClients: WsClient[] = [];
 
+export const getWsClientByUserId = (userId: string): WsClient | undefined => wsClients.find(client => client.id === userId);
 export const getWebSocketByUserId = (userId: string | number) => wsClients.find(client => client.id === userId)?.ws;
 export const getWebSocketByUserName = (userName: string) => wsClients.find(client => client.id === userName)?.ws;
 

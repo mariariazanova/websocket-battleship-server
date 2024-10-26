@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Command } from '../enums/command';
-import { rooms } from '../database/rooms-database';
+import {getRoomUserByUserId, getRoomUserByUserName, rooms} from '../database/rooms-database';
 import { wsClients } from '../database/ws-clients-database';
 import {getUserById, getUserByIndex, getUserByName, users} from '../database/users-database';
 import { sendResponse } from '../utils/send-response';
@@ -12,7 +12,7 @@ import { updateWinnersResponse } from './user-responses';
 import { finishResponse } from '../commands/responses';
 import { getAttackResult } from '../utils/get-attack-result';
 import { isGameFinished } from '../utils/is-game-finished';
-import {AttackResult} from "../enums/attack-result";
+import {AttackResultState} from "../enums/attack-result-state";
 
 export const createGameResponse = (data: any, userId: string): void => {
   // console.log('createGameResponse', userId);
@@ -128,12 +128,12 @@ export const turnResponse = (userId: string): void => {
 
 export const attackResponse = (userId: string, x: number, y: number): void => {
   // let index = 0;
-  const attackResult = getAttackResult(x, y, userId);
+  const { attackResultStatus, surroundingCells } = getAttackResult(x, y, userId);
   // console.log(attackResult);
   const attackData = {
     position: { x, y },
     currentPlayer: userId,
-    status: attackResult,
+    status: attackResultStatus,
   };
 
   // const response = {
@@ -150,6 +150,22 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
     const isUserPlaying = isUserPlayingInGame(client.id);
 
     isUserPlaying && sendResponse(client.id, Command.ATTACK, attackData);
+
+    if (attackResultStatus === AttackResultState.Killed) {
+      console.log('killed', surroundingCells);
+      surroundingCells?.forEach(cell => {
+        const [x, y] = cell.split(',').map(Number);
+        const clearCellsData = {
+          position: { x, y },
+          currentPlayer: userId,
+          status: AttackResultState.Miss,
+        };
+        const roomUser = getRoomUserByUserName(client.name);
+
+        isUserPlaying && sendResponse(client.id, Command.ATTACK, clearCellsData);
+        roomUser?.shots?.add(`${x},${y}`);
+      });
+    }
     // isUserPlaying && sendResponse(client.ws, Command.ATTACK, attackData);
   });
 
@@ -157,7 +173,7 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
   const roomUsers = room?.roomUsers || [];
   const enemyUserId = roomUsers.find(user => user.userId !== userId)?.userId;
 
-  console.log('nextUser not', userId, users, enemyUserId, attackResult);
+  console.log('nextUser not', userId, users, enemyUserId, attackResultStatus);
 
   if (enemyUserId && isGameFinished(enemyUserId)) {
     console.log("Game is finished! All ships have been destroyed.");
@@ -166,7 +182,7 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
     return;
   }
 
-  turnResponse(attackResult !== AttackResult.Miss ? userId : <string>enemyUserId);
+  turnResponse(attackResultStatus !== AttackResultState.Miss ? userId : <string>enemyUserId);
 
   // if (isSinglePlay()) {
   //     console.log('single play');

@@ -65,18 +65,11 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         attack(data);
         break;
       }
-            case Command.RANDOM_ATTACK: {
-                console.log('random attack');
-                console.log(data);
-                randomAttack(data);
-                // const data = JSON.parse(request.data);
-                // const attackResult = attack(data.gameId, data.indexPlayer);
-                // if (attackResult) {
-                //     sendAttackResult(attackResult);
-                //     checkBot(data.gameId, data.indexPlayer);
-                // };
-                break;
-            }
+      case Command.RANDOM_ATTACK: {
+        console.log(data);
+        randomAttack(data);
+        break;
+      }
             case Command.SINGLE_PLAY: {
                 console.log('single play');
                 // singlePlay(data);

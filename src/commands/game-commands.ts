@@ -5,7 +5,7 @@ import { rooms } from '../database/rooms-database';
 import { wsClients } from '../database/ws-clients-database';
 import { getAttackResult } from '../utils/get-attack-result';
 import {attackResponse, turnResponse} from '../responses/game-responses';
-import {AttackResult} from "../enums/attack-result";
+import {AttackResultState} from "../enums/attack-result-state";
 
 
 
@@ -49,7 +49,7 @@ export const attack = (data: any): void => {
 
           attackResponse(indexPlayer, x, y);
       // }
-  } else {
+  } else if (user && user.isTurn && roomUser?.shots?.has(shotCell)) {
       turnResponse(user?.id || '');
   }
 

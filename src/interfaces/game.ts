@@ -1,3 +1,3 @@
 export interface Game {
-    gameId: string | null;
+  gameId: string | null;
 }

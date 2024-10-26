@@ -18,7 +18,7 @@ import { Room } from '../interfaces/room';
 import { sendResponse } from '../utils/send-response';
 import {turnResponse} from "../responses/game-responses";
 import {updateWinnersResponse} from "../responses/user-responses";
-import {AttackResult} from "../enums/attack-result";
+import {AttackResultState} from "../enums/attack-result-state";
 
 
 
@@ -103,15 +103,17 @@ export const finishResponse = (userId: string): void => {
 export function initializeShipStates(ships: Ship[]): ShipState[] {
   return ships.map(ship => {
     const remainingCells = new Set<string>();
+    const occupiedCells = new Set<string>();
 
     for (let i = 0; i < ship.length; i++) {
       const x = ship.position.x + (ship.direction ? 0 : i);
       const y = ship.position.y + (ship.direction ? i : 0);
 
       remainingCells.add(`${x},${y}`);
+      occupiedCells.add(`${x},${y}`)
     }
 
-    return { ...ship, remainingCells };
+    return { ...ship, remainingCells, occupiedCells };
   });
 }
 
@@ -194,12 +196,14 @@ export function getRandomShips(): ShipState[] {
             // }
 
             // Place the ship
-            const remainingCells = new Set<string>(); // To track remaining cells of the ship
+            const remainingCells = new Set<string>();
+            const occupiedCells = new Set<string>();
             for (let i = 0; i < shipModel.length; i++) {
                 const shipX = randomCell.x + (randomDirection ? 0 : i);
                 const shipY = randomCell.y + (randomDirection ? i : 0);
                 field[shipX][shipY] = true; // Mark cell as occupied
-                remainingCells.add(`${shipX},${shipY}`); // Add the cell to the remaining cells
+                remainingCells.add(`${shipX},${shipY}`);
+                occupiedCells.add(`${shipX},${shipY}`);
             }
 
             const ship: ShipState = {
@@ -208,6 +212,7 @@ export function getRandomShips(): ShipState[] {
                 position: randomCell,
                 type: shipModel.type,
                 remainingCells: remainingCells,
+                occupiedCells:  occupiedCells,
             };
 
             ships.push(ship);
@@ -232,16 +237,16 @@ export function getRandomShips(): ShipState[] {
 //
 //             if (ship.remainingCells.size === 0) {
 //                 // The ship is killed
-//                 return AttackResult.Killed;
+//                 return AttackResultState.Killed;
 //             } else {
 //                 // The ship is just shot
-//                 return AttackResult.Shot;
+//                 return AttackResultState.Shot;
 //             }
 //         }
 //     }
 //
 //     // If no ship is hit, it's a miss
-//     return AttackResult.Miss;
+//     return AttackResultState.Miss;
 // }
 
 

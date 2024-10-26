@@ -8,9 +8,12 @@ export interface Ship {
 }
 
 export interface ShipsPerUser {
-    userId: number;
-    gameId: number;
-    ships: ShipState[];
+    userId: string;
+    name?: string;
+    index: number;
+    // gameId: number;
+    ships?: ShipState[];
+    shots?: Set<string>;
 }
 
 export interface ShipState extends Ship {

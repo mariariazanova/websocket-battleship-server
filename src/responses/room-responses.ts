@@ -8,6 +8,7 @@ import { Command } from '../enums/command';
 
 export const updateRoomResponse = (): void => {
   const getRoomsWithOneAnotherUser = (userName: string): Room[] => rooms.filter(room => (room.roomUsers.length === 1 && room.roomUsers.every(user => user.name !== userName)));
+
   wsClients.forEach(client => {
     const currentUser = getUserById(client.id);
 

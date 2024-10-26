@@ -1,7 +1,11 @@
 import { WebSocket } from 'ws';
 
 export interface WsClient {
-    id: number | string,
-    name: string,
-    ws: WebSocket,
+    name: string;
+    id: string;
+    index?: number;
+    isPlaying: boolean;
+    // isRegistered: boolean;
+    isTurn: boolean;
+    ws: WebSocket;
 }

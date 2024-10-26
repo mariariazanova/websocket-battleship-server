@@ -1,10 +1,11 @@
 import { WebSocket } from 'ws';
 import { Command } from '../enums/command';
 import {getWebSocketByUserId, getWebSocketByUserName, wsClients} from "../database/ws-clients-database";
-import {getUserById, users} from "../database/users-database";
+import {getUserById, loggedUsers, users} from "../database/users-database";
+import {WsClient} from "../interfaces/ws-client";
 
 // export const sendResponse = (socket: WebSocket, command: Command, data: any): void => {
-export const sendResponse = (userId: number | string, command: Command, data: any): void => {
+export const sendResponse = (userId: string, command: Command, data: any): void => {
     const response = {
         type: command,
         data: JSON.stringify(data),
@@ -21,18 +22,14 @@ export const sendResponse = (userId: number | string, command: Command, data: an
     webSocket && webSocket.send(JSON.stringify(response));
 }
 
-export const sendResponse2 = (socket: WebSocket, command: Command, data: any): void => {
-// export const sendResponse = (userId: number | string, command: Command, data: any): void => {
-    const response = {
-        type: command,
-        data: JSON.stringify(data),
-        id: 0,
-    };
-    console.log(users, wsClients[0].id, wsClients[1]?.id);
-    // const webSocket = getWebSocketByUserId(userId);
-    // const userName = getUserById(userId)?.name;
+export const sendResponse2 = (client: WsClient, command: Command, data: any): void => {
+  const response = {
+    type: command,
+    data: JSON.stringify(data),
+    id: 0,
+  };
 
-    console.log(`Send response ${command} to user:`, data);
-    socket.send(JSON.stringify(response))
-    socket.send(JSON.stringify(response));
+  console.log(`Send response ${command} to user with id ${client.id} and name ${client.name}`);
+  client.ws.send(JSON.stringify(response));
+    // console.log(users, loggedUsers);
 }

@@ -3,17 +3,15 @@ import { User } from '../interfaces/user';
 import {
     getUserById,
     getUserByIndex,
-    getUserByName,
+    getUserByName, loggedUsers,
     users,
     winners
 } from '../database/users-database';
 import { Command } from '../enums/command';
 import { rooms } from '../database/rooms-database';
 import {Ship, ShipsPerUser, ShipState} from '../interfaces/ship';
-import { ships } from '../database/ships-database';
 import { shipsConfiguration } from '../constants/ships-configuration';
 import { randomAttack } from './game-commands';
-import { game } from '../database/game-database';
 import { wsClients } from '../database/ws-clients-database';
 import { isUserPlayingInGame } from '../utils/is-user-playing';
 import { Room } from '../interfaces/room';
@@ -32,7 +30,7 @@ import {AttackResult} from "../enums/attack-result";
 
 
 
-export const finishResponse = (userId: number): void => {
+export const finishResponse = (userId: string): void => {
     console.log('finish');
 
     const response = {
@@ -48,7 +46,7 @@ export const finishResponse = (userId: number): void => {
         // console.log('HEY', users, index, getUserByIndex(index));
         // console.log(rooms.filter((room) => room.roomUsers.length === 1 && room.roomUsers[0].name !== getUserByIndex(index).name));
         // item.send(JSON.stringify(getResponse(index)));
-        const isUserPlaying = users.find(user => user.id === client.id)?.isPlaying;
+        const isUserPlaying = isUserPlayingInGame(client.id);
     // wsServer.clients.forEach(item => {
         // rooms.find(item => item.roomId === indexRoom);
 
@@ -56,39 +54,47 @@ export const finishResponse = (userId: number): void => {
         console.log('Response turn: ', response);
     });
 
-    const newWinner = winners.find((winner) => winner.id === userId);
+    const newWinner = loggedUsers.find((user) => user.name === getUserById(userId)?.name);
 
     if (newWinner) {
         newWinner.wins += 1;
-    } else {
-        winners.push({
-            id: userId,
-            name: users.find(user => user.id === userId)?.name || "",
-            wins: 1,
-        });
     }
+
+    // if (newWinner?.wins === 0) {
+    //     newWinner.wins += 1;
+    // } else {
+    //     newWinner.wins = 1;
+    //     // winners.push({
+    //     //     id: userId,
+    //     //     name: users.find(user => user.id === userId)?.name || "",
+    //     //     wins: 1,
+    //     // });
+    // }
 
     const room = rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === getUserById(userId)?.name));
 
     room?.roomUsers.forEach(roomUser => {
-        const foundUser = getUserByName(roomUser.name);
+        const foundUser = getUserByName(roomUser?.name || '');
 
         if (foundUser) {
-            foundUser.isPlaying = false;  // Only assign if foundUser is not undefined
+            foundUser.isPlaying = false;
+            foundUser.isTurn = false;
         }
     })
 
+    //delete room
     const index = rooms.findIndex(room => room.roomId === room.roomId);
 
     if (index !== -1) {
         rooms.splice(index, 1)
     }
 
-    const shipIndex = ships.findIndex(shipConfig => shipConfig.userId === userId);
-
-    if (shipIndex !== -1) {
-        ships.splice(index, 1)
-    }
+    //delete ships
+    // const shipIndex = ships.findIndex(shipConfig => shipConfig.userId === userId);
+    //
+    // if (shipIndex !== -1) {
+    //     ships.splice(index, 1)
+    // }
 
     // shipsState.length = 0;
 
@@ -211,32 +217,32 @@ export function getRandomShips(): ShipState[] {
     return ships;
 }
 
-function processAttackResult(x: number, y: number, userId: number): "miss" | "shot" | "killed" {
-    console.log(x, y, userId);
-
-    const enemyShips = ships.find(shipsPerUser => shipsPerUser.userId !== userId)?.ships ?? [];
-    const coordinate = `${x},${y}`;
-    console.log(enemyShips);
-
-    for (const ship of enemyShips) {
-        if (ship.remainingCells.has(coordinate)) {
-            // The shot hits this ship
-            ship.remainingCells.delete(coordinate);
-            console.log(ship.remainingCells);
-
-            if (ship.remainingCells.size === 0) {
-                // The ship is killed
-                return AttackResult.Killed;
-            } else {
-                // The ship is just shot
-                return AttackResult.Shot;
-            }
-        }
-    }
-
-    // If no ship is hit, it's a miss
-    return AttackResult.Miss;
-}
+// function processAttackResult(x: number, y: number, userId: string): "miss" | "shot" | "killed" {
+//     console.log(x, y, userId);
+//
+//     const enemyShips = ships.find(shipsPerUser => shipsPerUser.userId !== userId)?.ships ?? [];
+//     const coordinate = `${x},${y}`;
+//     console.log(enemyShips);
+//
+//     for (const ship of enemyShips) {
+//         if (ship.remainingCells.has(coordinate)) {
+//             // The shot hits this ship
+//             ship.remainingCells.delete(coordinate);
+//             console.log(ship.remainingCells);
+//
+//             if (ship.remainingCells.size === 0) {
+//                 // The ship is killed
+//                 return AttackResult.Killed;
+//             } else {
+//                 // The ship is just shot
+//                 return AttackResult.Shot;
+//             }
+//         }
+//     }
+//
+//     // If no ship is hit, it's a miss
+//     return AttackResult.Miss;
+// }
 
 
 

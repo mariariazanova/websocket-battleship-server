@@ -1,34 +1,56 @@
 import { Command } from '../enums/command';
 import {getUserById, getUserByIndex, getUserByName} from '../database/users-database';
-import { ships } from '../database/ships-database';
 import { initializeShipStates } from './responses';
-import { generateUniqueId } from '../utils/generate-uuid';
-import { games } from '../database/game-database';
 import { rooms } from '../database/rooms-database';
 import { wsClients } from '../database/ws-clients-database';
 import { getAttackResult } from '../utils/get-attack-result';
-import { attackResponse } from '../responses/game-responses';
+import {attackResponse, turnResponse} from '../responses/game-responses';
+import {AttackResult} from "../enums/attack-result";
 
 
 
 export const addShips = (data: any): void => {
   const { gameId, ships: createdShips, indexPlayer } = JSON.parse(data);
 
-  ships.push({
-    userId: indexPlayer,
-    gameId,
-    ships: initializeShipStates(createdShips),
-  });
+  const room = rooms.find((room) =>room.gameId === gameId);
+
+  if (room) {
+      const roomUser = room?.roomUsers.find(user => user.userId === indexPlayer);
+
+      if (roomUser) {
+          roomUser.ships = initializeShipStates(createdShips);
+          roomUser.shots = new Set<string>();
+      }
+  }
 };
 
 export const attack = (data: any): void => {
   const { gameId, indexPlayer, x, y } = JSON.parse(data);
   // console.log('attack', indexPlayer);
+    const shotCell = `${x},${y}`;
 
   const user = getUserById(indexPlayer);
-  console.log(user);
-  if (user && user.isTurn) {
-      attackResponse(indexPlayer, x, y);
+    const room = user && rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === user.name));
+    const roomUsers = room?.roomUsers || [];
+    const roomUser = roomUsers.find((roomUser) => roomUser.userId == user?.id)
+
+  // console.log(user);
+  if (user && user.isTurn && !roomUser?.shots?.has(shotCell)) {
+      // const room = rooms.find(room => room.roomUsers.some(roomUser => roomUser.name === user.name));
+      // const roomUsers = room?.roomUsers || [];
+      // const roomUser = roomUsers.find((roomUser) => roomUser.userId == user.id)
+          // roomUsers?.find((roomUser) => roomUser.userId === user.id);
+
+      // if (roomUser?.shots?.has(shotCell)) {
+      //     console.log(`Cell (${x}, ${y}) has already been attacked.`);
+      //     // return; // Exit the function early if the cell was previously attacked
+      // } else {
+          roomUser?.shots?.add(shotCell);
+
+          attackResponse(indexPlayer, x, y);
+      // }
+  } else {
+      turnResponse(user?.id || '');
   }
 
   // getAttackResult(indexPlayer, x, y);

@@ -1,3 +1,4 @@
 import { users } from '../database/users-database';
+import {wsClients} from "../database/ws-clients-database";
 
-export const isUserPlayingInGame = (id: number | string): boolean => users.find(user => user.id === id)?.isPlaying ?? false;
+export const isUserPlayingInGame = (id: string): boolean => wsClients.find(user => user.id === id)?.isPlaying ?? false;

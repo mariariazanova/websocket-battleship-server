@@ -4,21 +4,23 @@ import { rooms } from '../database/rooms-database';
 import { UserWithIndex } from '../interfaces/user';
 import { isUserPlayingInGame } from '../utils/is-user-playing';
 
-export const createRoom = (roomId: number, userId: number): void => {
+export const createRoom = (roomId: string, userId: string): void => {
   const currentUser = getUserById(userId);
   const isUserPlaying = isUserPlayingInGame(userId);
 
   if (currentUser && !isUserPlaying) {
     const room: Room = {
       roomId,
-      roomUsers: [{ name: currentUser.name, index: <number>currentUser.index }],
+      roomUsers: [{ name: currentUser.name, index: <number>currentUser.index, userId }],
     };
 
-    rooms.push(room);
+    if (!rooms.filter(room => room.roomUsers.some(user => user.name === currentUser.name)).length) {
+      rooms.push(room);
+    }
   }
 }
 
-export function addUserToRoom(data: any, userId: number): void {
+export function addUserToRoom(data: any, userId: string): void {
   const { indexRoom } = JSON.parse(data);
   const currentUser = getUserById(userId);
   const isUserPlaying = isUserPlayingInGame(userId);
@@ -27,13 +29,14 @@ export function addUserToRoom(data: any, userId: number): void {
   if (currentUser && !isUserPlaying) {
     const roomUser = {
       name: currentUser.name,
-      index: currentUser.index,
+      index: <number>currentUser.index,
+      userId,
     };
     const room = rooms.find(item => item.roomId === indexRoom);
     // console.log(room);
 
     if (room && room.roomUsers && room.roomUsers.length === 1) {
-      room.roomUsers.push(<UserWithIndex>roomUser);
+      room.roomUsers.push(roomUser);
       // room.roomUsers.forEach(user => {
       //   const foundUser = getUserByName(user.name);
       //   console.log(foundUser);

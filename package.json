@@ -1,0 +1,39 @@
+{
+    "name": "ws_task",
+    "version": "1.0.0",
+    "description": "Websocket battleship server",
+    "main": "src/index.ts",
+    "scripts": {
+        "start": "webpack --mode production && node ./dist/index.js",
+        "start:dev": "nodemon",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "eslint": "eslint \"src/**/*.ts\""
+    },
+    "author": "Maria Riazanova",
+    "keywords": [],
+    "license": "ISC",
+    "dependencies": {
+        "ws": "8.17.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.7.7",
+        "@types/ws": "^8.5.10",
+        "@typescript-eslint/eslint-plugin": "^5.28.0",
+        "@typescript-eslint/parser": "^5.28.0",
+        "eslint": "^8.57.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-config-airbnb-typescript": "^17.0.0",
+        "eslint-config-prettier": "^8.8.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "eslint-plugin-import": "^2.26.0",
+        "nodemon": "^3.0.1",
+        "prettier": "^2.8.0",
+        "ts-loader": "^9.5.1",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.7.1",
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.5.0",
+        "webpack": "^5.95.0",
+        "webpack-cli": "^5.1.4"
+    }
+}

@@ -1,0 +1,15 @@
+export enum Command {
+  ADD_SHIPS = 'add_ships',
+  ADD_USER_TO_ROOM = 'add_user_to_room',
+  ATTACK = 'attack',
+  CREATE_GAME = 'create_game',
+  CREATE_ROOM = 'create_room',
+  FINISH = 'finish',
+  RANDOM_ATTACK = 'randomAttack',
+  REG = 'reg',
+  SINGLE_PLAY = 'single_play',
+  START_GAME = 'start_game',
+  TURN = 'turn',
+  UPDATE_ROOM = 'update_room',
+  UPDATE_WINNERS = 'update_winners',
+}

@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+
+# System Files
+Thumbs.db
+[Dd]esktop.ini
+
+# Links
+*.lnk
+.idea/
+*.PEM
+.vscode/
+
+# Logs
+npm-debug.log

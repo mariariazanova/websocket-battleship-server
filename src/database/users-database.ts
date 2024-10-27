@@ -27,6 +27,19 @@ export const getUserById = (userId: string): User | undefined => {
     return wsClients.find(user => user.id === userId);
 };
 
+export const loggedBotUser: LoggedUser = {
+  name: 'bot',
+  password: '111111',
+  wins: 0,
+};
+
+export const botUser: User = {
+  id: '111111',
+  name: 'bot',
+  isPlaying: false,
+  isTurn: false,
+};
+
 // export const updateUser = (userId: string, newUserId: string): void => {
 //     const user = getUserById(userId);
 //

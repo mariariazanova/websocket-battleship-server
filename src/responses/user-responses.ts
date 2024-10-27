@@ -27,14 +27,19 @@ export const registerResponse = (loggedUser: LoggedUser, wsClient: WsClient): vo
       if (existingUser?.password === loggedUser.password) {
         dataMessage.error = false;
 
-        wsClients.push(wsClient);
+        // if (wsClient.name !== 'bot') {
+          wsClients.push(wsClient);
+        // }
       } else {
         dataMessage.errorText = 'Wrong password';
       }
     }
   } else {
     loggedUsers.push(loggedUser);
-    wsClients.push(wsClient);
+
+    // if (wsClient.name !== 'bot') {
+      wsClients.push(wsClient);
+    // }
 
     dataMessage.error = false;
   }

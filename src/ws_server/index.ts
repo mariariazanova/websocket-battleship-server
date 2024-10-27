@@ -7,12 +7,12 @@ import {
     getRandomShips, initializeShipStates,
 } from '../commands/responses';
 import { addShips, attack, randomAttack } from '../commands/game-commands';
-import {getUserById, getUserByName, loggedUsers, users} from '../database/users-database';
+import {botUser, getUserById, getUserByName, loggedBotUser, loggedUsers, users} from '../database/users-database';
 import { wsClients } from '../database/ws-clients-database';
 import { createGameResponse, finishResponse, startGameResponse, turnResponse } from '../responses/game-responses';
 import { updateRoomResponse } from '../responses/room-responses';
 import { updateWinnersResponse } from '../responses/user-responses';
-import {getRoomByUserId, getRoomUserByUserId, rooms} from "../database/rooms-database";
+import {getRoomByUserId, getRoomByUserName, getRoomUserByUserId, rooms} from "../database/rooms-database";
 
 const WS_PORT = 3000;
 export const wsServer = new WebSocketServer({ port: WS_PORT });
@@ -51,6 +51,7 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         break;
       }
       case Command.ADD_SHIPS: {
+        console.log('MASHA NEEDS TO ADD SHIPS', data);
         addShips(data);
         startGameResponse(data);
         break;
@@ -63,34 +64,37 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         randomAttack(data);
         break;
       }
-            case Command.SINGLE_PLAY: {
-                console.log('single play');
-                // singlePlay(data);
-                registerUser(JSON.stringify({ name: 'bot', password: 'bot' }), wsClient, '111111');
-                updateRoomResponse();
-                updateWinnersResponse();
+      case Command.SINGLE_PLAY: {
+        registerUser(JSON.stringify(loggedBotUser), undefined, botUser.id);
+        updateRoomResponse();
+        updateWinnersResponse();
 
-                const roomId = randomUUID();
+        const roomId = randomUUID();
 
-                createRoom(roomId, userId);
-                updateRoomResponse();
+        createRoom(roomId, userId);
+        updateRoomResponse();
 
-                addUserToRoom(JSON.stringify({ indexRoom: roomId }), userId);
-                addUserToRoom(JSON.stringify({ indexRoom: roomId }), '111111');
+        // addUserToRoom(JSON.stringify({ indexRoom: roomId }), userId);
+        addUserToRoom(JSON.stringify({ indexRoom: roomId }), botUser.id);
 
-                updateRoomResponse();
-                createGameResponse(data, userId);
-                console.log('bot ships', getRandomShips());
-                const shipsData = JSON.stringify({
-                    indexPlayer: 111111,
+        updateRoomResponse();
+        createGameResponse(JSON.stringify({ indexRoom: roomId }), userId);
+        // addShips(data);
+        const room = getRoomByUserName(botUser.name);
+        console.log('ROOM', rooms, rooms[0].roomUsers[0], rooms[0].roomUsers[1], room);
+
+        const shipsData = JSON.stringify({
+                    indexPlayer: botUser.id,
                     ships: initializeShipStates(getRandomShips()),
-                });
-                addShips(shipsData);
-                startGameResponse(shipsData);
-                turnResponse('88');
+                    gameId: room?.gameId,
+        });
+        console.log('shipsData', shipsData);
 
-                break;
-            }
+        addShips(shipsData);
+        // startGameResponse(shipsData);
+        // turnResponse('88');
+        break;
+      }
     }
   });
 
@@ -139,8 +143,8 @@ wsServer.on('connection', (wsClient: WebSocket) => {
 
 process.on('SIGINT', () => {
   wsClients.forEach((client) => {
-    if (client.ws.readyState === WebSocket.OPEN) {
-      client.ws.close(1000, 'Server shutting down');
+    if (client.ws?.readyState === WebSocket.OPEN) {
+      client.ws?.close(1000, 'Server shutting down');
     }
   });
 

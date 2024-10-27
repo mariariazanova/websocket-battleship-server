@@ -9,7 +9,7 @@ import {
   rooms
 } from '../database/rooms-database';
 import {getWebSocketByUserId, getWsClientByUserId, wsClients} from '../database/ws-clients-database';
-import {getUserById, getUserByName, loggedUsers} from '../database/users-database';
+import {botUser, getUserById, getUserByName, loggedUsers} from '../database/users-database';
 import { sendResponse } from '../utils/send-response';
 import { ShipState } from '../interfaces/ship';
 import { isUserPlayingInGame } from '../utils/is-user-playing';
@@ -46,8 +46,11 @@ export const createGameResponse = (data: any, userId: string): void => {
 
 export const startGameResponse = (data: any): void => {
   const { gameId } = JSON.parse(data);
+  console.log(rooms);
   const room = rooms.find(room => room.gameId === gameId);
+  console.log(room);
   const roomUsers = getRoomUsers(<Room>room);
+  console.log(roomUsers);
 
   const areAllShipsSetForBothUsers = roomUsers.every(
       (user) => Array.isArray(user.ships) && !!user.ships.length
@@ -57,7 +60,7 @@ export const startGameResponse = (data: any): void => {
     const getUserShips = (userId: string): ShipState[] | undefined => roomUsers.find((user) => user.userId == userId)?.ships;
 
     roomUsers?.forEach((roomUser) => {
-      const user = getUserByName(roomUser?.name || '');
+      console.log('TURN NEED', roomUsers);
       const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
       isUserPlaying && sendResponse(roomUser.userId, Command.START_GAME, getUserShips(roomUser.userId));
@@ -67,6 +70,7 @@ export const startGameResponse = (data: any): void => {
 };
 
 export const turnResponse = (userId: string): void => {
+  console.log('TURN', userId);
   const roomUsers = getRoomUsersByUserId(userId);
 
   const getTurnData = (): Record<string, number | string> | undefined=> {
@@ -95,12 +99,14 @@ export const turnResponse = (userId: string): void => {
     isUserPlaying && sendResponse(roomUser.userId, Command.TURN, getTurnData());
   });
 
-  if (isSinglePlay() && userId === '111111') {
+  if (isSinglePlay() && userId === botUser.id) {
     console.log('single play');
+    const room = getRoomByUserId(botUser.id);
+    console.log(room);
 
     setTimeout(() => {
       // not game, but use games
-      randomAttack(JSON.stringify({ gameId: 'gameId', indexPlayer: 111111 }));
+      randomAttack(JSON.stringify({ gameId: room?.gameId, indexPlayer: botUser.id }));
     }, 1500);
   }
 };
@@ -117,6 +123,7 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
   roomUsers?.forEach((roomUser) => {
     const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
+    console.log('ATTACK', userId, isUserPlaying)
     isUserPlaying && sendResponse(roomUser.userId, Command.ATTACK, attackData);
 
     if (attackResultStatus === AttackResultState.Killed) {
@@ -139,6 +146,7 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
 
   const enemyRoomUser = getRoomUserByUserId(userId, false);
   const enemyUserId = enemyRoomUser?.userId;
+  console.log('enemy', enemyRoomUser, enemyUserId);
 
   if (enemyUserId && isGameFinished(enemyUserId)) {
     finishResponse(userId);

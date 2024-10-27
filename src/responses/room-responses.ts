@@ -1,8 +1,8 @@
 import { Room } from '../interfaces/room';
 import { rooms } from '../database/rooms-database';
 import { wsClients } from '../database/ws-clients-database';
-import { getUserById } from '../database/users-database';
-import { isUserPlayingInGame } from '../utils/is-user-playing';
+import { getUserById } from '../functions/get-user-info';
+import { isUserPlayingInGame } from '../functions/is-user-playing';
 import { sendResponse } from '../utils/send-response';
 import { Command } from '../enums/command';
 

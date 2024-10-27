@@ -1,13 +1,11 @@
-import {
-  getUserById,
-  loggedUsers,
-} from '../database/users-database';
+import { loggedUsers } from '../database/users-database';
 import { wsClients } from '../database/ws-clients-database';
-import { sendResponse, sendResponse2} from '../utils/send-response';
+import { sendResponse, sendResponseToClient } from '../utils/send-response';
 import { Command } from '../enums/command';
-import { LoggedUser, User} from '../interfaces/user';
-import { isUserPlayingInGame } from '../utils/is-user-playing';
+import { LoggedUser } from '../interfaces/user';
+import { isUserPlayingInGame } from '../functions/is-user-playing';
 import { WsClient } from '../interfaces/ws-client';
+import { getUserById } from '../functions/get-user-info';
 
 export const registerResponse = (loggedUser: LoggedUser, wsClient: WsClient): void => {
   const wsClientIndex = wsClients.length;
@@ -27,24 +25,19 @@ export const registerResponse = (loggedUser: LoggedUser, wsClient: WsClient): vo
       if (existingUser?.password === loggedUser.password) {
         dataMessage.error = false;
 
-        // if (wsClient.name !== 'bot') {
-          wsClients.push(wsClient);
-        // }
+        wsClients.push(wsClient);
       } else {
         dataMessage.errorText = 'Wrong password';
       }
     }
   } else {
     loggedUsers.push(loggedUser);
-
-    // if (wsClient.name !== 'bot') {
-      wsClients.push(wsClient);
-    // }
+    wsClients.push(wsClient);
 
     dataMessage.error = false;
   }
 
-  sendResponse2(wsClient, Command.REG, dataMessage);
+  sendResponseToClient(wsClient, Command.REG, dataMessage);
 };
 
 export const updateWinnersResponse = (): void => {

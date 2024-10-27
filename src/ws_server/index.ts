@@ -3,16 +3,17 @@ import { randomUUID } from 'crypto';
 import { Command } from '../enums/command';
 import { registerUser } from '../commands/user-commands';
 import { addUserToRoom, createRoom } from '../commands/room-commands';
-import {
-    getRandomShips, initializeShipStates,
-} from '../commands/responses';
 import { addShips, attack, randomAttack } from '../commands/game-commands';
-import {botUser, getUserById, getUserByName, loggedBotUser, loggedUsers, users} from '../database/users-database';
+import { botUser, loggedBotUser, loggedUsers } from '../database/users-database';
+import { getUserById } from '../functions/get-user-info';
 import { wsClients } from '../database/ws-clients-database';
-import { createGameResponse, finishResponse, startGameResponse, turnResponse } from '../responses/game-responses';
+import { createGameResponse, finishResponse, startGameResponse } from '../responses/game-responses';
 import { updateRoomResponse } from '../responses/room-responses';
+import { rooms } from '../database/rooms-database'
 import { updateWinnersResponse } from '../responses/user-responses';
-import {getRoomByUserId, getRoomByUserName, getRoomUserByUserId, rooms} from "../database/rooms-database";
+import { getRoomByUserId, getRoomByUserName, getRoomUserByUserId } from '../functions/get-room-info';
+import { initializeShipStates } from '../functions/initialize-ship-states';
+import { getRandomShips } from '../functions/get-random-ships';
 
 const WS_PORT = 3000;
 export const wsServer = new WebSocketServer({ port: WS_PORT });
@@ -51,7 +52,6 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         break;
       }
       case Command.ADD_SHIPS: {
-        console.log('MASHA NEEDS TO ADD SHIPS', data);
         addShips(data);
         startGameResponse(data);
         break;
@@ -74,25 +74,19 @@ wsServer.on('connection', (wsClient: WebSocket) => {
         createRoom(roomId, userId);
         updateRoomResponse();
 
-        // addUserToRoom(JSON.stringify({ indexRoom: roomId }), userId);
         addUserToRoom(JSON.stringify({ indexRoom: roomId }), botUser.id);
 
         updateRoomResponse();
         createGameResponse(JSON.stringify({ indexRoom: roomId }), userId);
-        // addShips(data);
-        const room = getRoomByUserName(botUser.name);
-        console.log('ROOM', rooms, rooms[0].roomUsers[0], rooms[0].roomUsers[1], room);
 
+        const room = getRoomByUserName(botUser.name);
         const shipsData = JSON.stringify({
-                    indexPlayer: botUser.id,
-                    ships: initializeShipStates(getRandomShips()),
-                    gameId: room?.gameId,
+          indexPlayer: botUser.id,
+          ships: initializeShipStates(getRandomShips()),
+          gameId: room?.gameId,
         });
-        console.log('shipsData', shipsData);
 
         addShips(shipsData);
-        // startGameResponse(shipsData);
-        // turnResponse('88');
         break;
       }
     }
@@ -136,6 +130,7 @@ wsServer.on('connection', (wsClient: WebSocket) => {
 
   wsClient.on('error', (error) => {
     console.error('WebSocket error:', error);
+
     wsClient.close();
     process.exit(1);
   });
@@ -150,6 +145,7 @@ process.on('SIGINT', () => {
 
   wsServer.close(() => {
     console.log('WebSocket server closed');
+
     process.exit(0);
   });
 });

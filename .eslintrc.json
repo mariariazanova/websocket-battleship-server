@@ -8,7 +8,9 @@
     "airbnb-base",
     "airbnb-typescript/base",
     "eslint:recommended",
-    "plugin:import/typescript"
+    "plugin:import/typescript",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -19,10 +21,14 @@
   },
   "plugins": [
     "@typescript-eslint",
+    "@typescript-eslint/eslint-plugin",
     "import"
   ],
   "rules": {
     "@typescript-eslint/no-unused-expressions": "off",
-    "import/prefer-default-export": "off"
+    "@typescript-eslint/no-shadow": "off",
+    "@typescript-eslint/no-use-before-define": "off",
+    "import/prefer-default-export": "off",
+    "import/no-cycle": "off"
   }
 }

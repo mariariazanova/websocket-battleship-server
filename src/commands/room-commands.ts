@@ -12,15 +12,22 @@ export const createRoom = (roomId: string, userId: string): void => {
   if (currentUser && !isUserPlaying) {
     const room: Room = {
       roomId,
-      roomUsers: [{ name: currentUser.name, index: <number>currentUser.index, userId }],
+      roomUsers: [
+        { name: currentUser.name, index: <number>currentUser.index, userId },
+      ],
     };
 
-    if (!rooms.filter(room => room.roomUsers.some(user => user.name === currentUser.name)).length) {
+    if (
+      !rooms.filter((room) =>
+        room.roomUsers.some((user) => user.name === currentUser.name),
+      ).length
+    ) {
       rooms.push(room);
     }
   }
-}
+};
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function addUserToRoom(data: any, userId: string): void {
   const { indexRoom } = JSON.parse(data);
   const currentUser = getUserById(userId) || botUser;
@@ -32,11 +39,10 @@ export function addUserToRoom(data: any, userId: string): void {
       index: <number>currentUser.index,
       userId,
     };
-    const room = rooms.find(item => item.roomId === indexRoom);
+    const room = rooms.find((item) => item.roomId === indexRoom);
 
     if (room && room.roomUsers && room.roomUsers.length === 1) {
       room.roomUsers.push(roomUser);
-      console.log(rooms);
 
       deleteUnnecessaryRoom(currentUser.name);
     }

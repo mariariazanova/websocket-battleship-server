@@ -1,4 +1,4 @@
-import { ShipsPerUser } from "./ship";
+import { ShipsPerUser } from './ship';
 
 export interface Room {
   roomId: string;

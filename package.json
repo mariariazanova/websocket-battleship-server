@@ -7,7 +7,7 @@
         "start": "webpack --mode production && node ./dist/index.js",
         "start:dev": "nodemon",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "eslint": "eslint"
+        "eslint": "eslint \"src/**/*.ts\""
     },
     "author": "Maria Riazanova",
     "keywords": [],
@@ -23,6 +23,8 @@
         "eslint": "^8.57.0",
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-airbnb-typescript": "^17.0.0",
+        "eslint-config-prettier": "^8.8.0",
+        "eslint-plugin-prettier": "^4.2.1",
         "eslint-plugin-import": "^2.26.0",
         "nodemon": "^3.0.1",
         "prettier": "^2.8.0",

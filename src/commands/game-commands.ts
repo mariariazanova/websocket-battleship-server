@@ -3,7 +3,9 @@ import { getRoomUserByUserId } from '../functions/get-room-info';
 import { attackResponse, turnResponse } from '../responses/game-responses';
 import { initializeShipStates } from '../functions/initialize-ship-states';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const addShips = (data: any): void => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { gameId, ships: createdShips, indexPlayer } = JSON.parse(data);
   const roomUser = getRoomUserByUserId(indexPlayer);
 
@@ -13,7 +15,9 @@ export const addShips = (data: any): void => {
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const attack = (data: any): void => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { gameId, indexPlayer, x, y } = JSON.parse(data);
   const shotCell = `${x},${y}`;
 
@@ -29,6 +33,7 @@ export const attack = (data: any): void => {
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const randomAttack = (data: any): void => {
   const { gameId, indexPlayer } = JSON.parse(data);
   const maxAttempts = 100;
@@ -38,21 +43,22 @@ export const randomAttack = (data: any): void => {
   let y: number;
   let attackPositionFound = false;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     x = Math.floor(Math.random() * 10);
     y = Math.floor(Math.random() * 10);
 
     const coordinates = `${x},${y}`;
-    const attackedCells= roomUser?.shots;
+    const attackedCells = roomUser?.shots;
 
     if (attackedCells && !attackedCells.has(coordinates)) {
-      attack(JSON.stringify({ gameId, x,  y, indexPlayer  }));
+      attack(JSON.stringify({ gameId, x, y, indexPlayer }));
       attackPositionFound = true;
       break;
     }
   }
 
   if (!attackPositionFound) {
+    // eslint-disable-next-line no-console
     console.warn(`Unable to find empty cell after ${maxAttempts} attempts`);
   }
-}
+};

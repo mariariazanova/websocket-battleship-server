@@ -10,4 +10,3 @@ export interface User extends Pick<LoggedUser, 'name'> {
   isTurn: boolean;
   index?: number;
 }
-

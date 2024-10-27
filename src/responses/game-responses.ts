@@ -20,45 +20,61 @@ import { isGameFinished } from '../functions/is-game-finished';
 import { AttackResultState } from '../enums/attack-result-state';
 import { Room } from '../interfaces/room';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createGameResponse = (data: any, userId: string): void => {
   const { indexRoom } = JSON.parse(data);
   const gameId = randomUUID();
 
-  const getGameInfo = (userId: string) => ({ idGame: gameId, idPlayer: userId });
-  const roomToPlay = rooms.find(room => room.roomId === indexRoom);
+  const getGameInfo = (userId: string) => ({
+    idGame: gameId,
+    idPlayer: userId,
+  });
+  const roomToPlay = rooms.find((room) => room.roomId === indexRoom);
   const roomUsers = getRoomUsersByUserId(userId);
 
   if (roomToPlay) {
     roomToPlay.gameId = gameId;
 
-    roomUsers?.length && roomUsers.forEach((roomUser) => {
-      const user = getUserByName(roomUser?.name || '');
+    roomUsers?.length &&
+      roomUsers.forEach((roomUser) => {
+        const user = getUserByName(roomUser?.name || '');
 
-      if (user) {
-        user.isPlaying = true;
-      }
+        if (user) {
+          user.isPlaying = true;
+        }
 
-      sendResponse(roomUser.userId, Command.CREATE_GAME, getGameInfo(roomUser.userId));
-    });
+        sendResponse(
+          roomUser.userId,
+          Command.CREATE_GAME,
+          getGameInfo(roomUser.userId),
+        );
+      });
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const startGameResponse = (data: any): void => {
   const { gameId } = JSON.parse(data);
-  const room = rooms.find(room => room.gameId === gameId);
+  const room = rooms.find((room) => room.gameId === gameId);
   const roomUsers = getRoomUsers(<Room>room);
 
   const areAllShipsSetForBothUsers = roomUsers.every(
-    (user) => Array.isArray(user.ships) && !!user.ships.length
+    (user) => Array.isArray(user.ships) && !!user.ships.length,
   );
 
   if (areAllShipsSetForBothUsers) {
-    const getUserShips = (userId: string): ShipState[] | undefined => roomUsers.find((user) => user.userId == userId)?.ships;
+    const getUserShips = (userId: string): ShipState[] | undefined =>
+      roomUsers.find((user) => user.userId === userId)?.ships;
 
     roomUsers?.forEach((roomUser) => {
       const isUserPlaying = isUserPlayingInGame(roomUser.userId);
 
-      isUserPlaying && sendResponse(roomUser.userId, Command.START_GAME, getUserShips(roomUser.userId));
+      isUserPlaying &&
+        sendResponse(
+          roomUser.userId,
+          Command.START_GAME,
+          getUserShips(roomUser.userId),
+        );
       isUserPlaying && turnResponse(roomUsers[0].userId);
     });
   }
@@ -67,24 +83,17 @@ export const startGameResponse = (data: any): void => {
 export const turnResponse = (userId: string): void => {
   const roomUsers = getRoomUsersByUserId(userId);
 
-  const getTurnData = (): Record<string, number | string> | undefined=> {
+  const getTurnData = (): Record<string, number | string> | undefined => {
     const user = getUserById(userId);
+    const enemyRoomUser = getRoomUserByUserId(userId, false);
+    const enemy = getUserByName(<string>enemyRoomUser?.name);
 
-    if (user) {
-      const enemyRoomUser = getRoomUserByUserId(userId, false);
-
+    if (user && enemy) {
       user.isTurn = true;
-
-      if (enemyRoomUser) {
-        const enemy = getUserByName(<string>enemyRoomUser.name);
-
-        if (enemy) {
-          enemy.isTurn = false;
-        }
-
-        return { currentPlayer: userId || user.id };
-      }
+      enemy.isTurn = false;
     }
+
+    return { currentPlayer: userId || <string>user?.id };
   };
 
   roomUsers?.forEach((roomUser) => {
@@ -97,13 +106,19 @@ export const turnResponse = (userId: string): void => {
     const room = getRoomByUserId(botUser.id);
 
     setTimeout(() => {
-      randomAttack(JSON.stringify({ gameId: room?.gameId, indexPlayer: botUser.id }));
+      randomAttack(
+        JSON.stringify({ gameId: room?.gameId, indexPlayer: botUser.id }),
+      );
     }, 1500);
   }
 };
 
 export const attackResponse = (userId: string, x: number, y: number): void => {
-  const { attackResultStatus, surroundingCells } = getAttackResult(x, y, userId);
+  const { attackResultStatus, surroundingCells } = getAttackResult(
+    x,
+    y,
+    userId,
+  );
   const attackData = {
     position: { x, y },
     currentPlayer: userId,
@@ -117,7 +132,7 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
     isUserPlaying && sendResponse(roomUser.userId, Command.ATTACK, attackData);
 
     if (attackResultStatus === AttackResultState.Killed) {
-      surroundingCells?.forEach(cell => {
+      surroundingCells?.forEach((cell) => {
         const [x, y] = cell.split(',').map(Number);
         const clearCellsData = {
           position: { x, y },
@@ -125,7 +140,8 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
           status: AttackResultState.Miss,
         };
 
-        isUserPlaying && sendResponse(roomUser.userId, Command.ATTACK, clearCellsData);
+        isUserPlaying &&
+          sendResponse(roomUser.userId, Command.ATTACK, clearCellsData);
 
         if (roomUser.userId === userId) {
           roomUser?.shots?.add(`${x},${y}`);
@@ -143,11 +159,16 @@ export const attackResponse = (userId: string, x: number, y: number): void => {
     return;
   }
 
-  turnResponse(attackResultStatus !== AttackResultState.Miss ? userId : <string>enemyUserId);
+  turnResponse(
+    attackResultStatus !== AttackResultState.Miss
+      ? userId
+      : <string>enemyUserId,
+  );
 };
 
 export const finishResponse = (userId: string): void => {
   const finishData = { winPlayer: userId };
+  const room = getRoomByUserId(userId);
   const roomUsers = getRoomUsersByUserId(userId);
 
   roomUsers?.forEach((roomUser) => {
@@ -162,15 +183,19 @@ export const finishResponse = (userId: string): void => {
     isUserPlaying && sendResponse(roomUser.userId, Command.FINISH, finishData);
   });
 
-  const newWinner = loggedUsers.find((user) => user.name === getUserById(userId)?.name);
+  const newWinner = loggedUsers.find(
+    (user) => user.name === getUserById(userId)?.name,
+  );
 
   if (newWinner) {
     newWinner.wins += 1;
   }
 
-  const index = rooms.findIndex(room => room.roomId === room.roomId);
+  const index = rooms.findIndex(
+    (roomInBase) => roomInBase.roomId === room?.roomId,
+  );
 
   if (index !== -1) {
-    rooms.splice(index, 1)
+    rooms.splice(index, 1);
   }
 };
